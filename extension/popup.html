@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+  <meta charset="UTF-8">
+  <title>Austra ERP Automatizācija</title>
+  <style>
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      color: #1e293b;
+      background: #f8fafc;
+    }
+    .header {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      color: white;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    .header span {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 12px 14px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .status-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .status-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .timer {
+      font-family: monospace;
+      font-size: 11px;
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #475569;
+    }
+    .indicators-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 8px 0;
+    }
+    .indicator-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: #475569;
+      background: #f8fafc;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .dot-badge {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #cbd5e1;
+    }
+    .dot-badge.green {
+      background: #22c55e;
+      box-shadow: 0 0 5px rgba(34, 197, 94, 0.6);
+    }
+    .dot-badge.pending {
+      background: #e2e8f0;
+      border: 1px solid #94a3b8;
+    }
+    .dot-badge.error {
+      background: #ef4444;
+    }
+    .btn-main {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s;
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+    .btn-start {
+      background: #10b981;
+      color: white;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+    }
+    .btn-start:hover {
+      background: #059669;
+    }
+    .btn-stop {
+      background: #ef4444;
+      color: white;
+    }
+    .btn-stop:hover {
+      background: #dc2626;
+    }
+    .btn-done {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn-secondary {
+      width: 100%;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #475569;
+      font-size: 11.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .btn-secondary:hover {
+      background: #f1f5f9;
+    }
+    .footer {
+      padding: 4px 14px 10px;
+      text-align: center;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div style="font-size: 22px;">⚡</div>
+    <div>
+      <h1>Austra Auto-Ražošana</h1>
+      <span>Pasūtījumu automatizācija</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="card" id="card-status">
+      <div class="status-badge">
+        <div class="status-title" id="tab-status-title">
+          <span id="tab-status-icon">⚪</span> <span id="tab-status-text">Pārbauda cilni...</span>
+        </div>
+        <div class="timer" id="popup-timer" style="display: none;">00:00</div>
+      </div>
+
+      <div class="indicators-list" id="popup-indicators" style="display: none;">
+        <div class="indicator-item">
+          <span>✂️ CutRite faili</span>
+          <span class="dot-badge pending" id="pop-dot-cutrite"></span>
+        </div>
+        <div class="indicator-item">
+          <span>📋 BOM izveidoti</span>
+          <span class="dot-badge pending" id="pop-dot-bom"></span>
+        </div>
+        <div class="indicator-item">
+          <span>🔨 Montāžas pasūtījums</span>
+          <span class="dot-badge pending" id="pop-dot-assembly"></span>
+        </div>
+      </div>
+
+      <p style="font-size: 11.5px; color: #64748b; margin: 4px 0 0;" id="tab-status-desc"></p>
+    </div>
+
+    <!-- Galvenā palaišanas poga tieši šeit popupā! -->
+    <button class="btn-main btn-start" id="btn-popup-action" style="display: none;">
+      🚀 Sākt auto-rezervāciju
+    </button>
+
+    <button class="btn-secondary" id="btn-test-sound">
+      🔔 Pārbaudīt skaņas signālu
+    </button>
+  </div>
+
+  <div class="footer">
+    AM Furnitūra &copy; 2026 • v1.0.1
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

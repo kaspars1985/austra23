@@ -1,0 +1,357 @@
+/* ==========================================================================
+   Austra ERP Docked Right-Side Panel (No Overlap)
+   ========================================================================== */
+
+/* Lapas pamatkorpuss tiek nobīdīts pa kreisi, kad panelis ir atvērts */
+body.austra-sidebar-open {
+  margin-right: 320px !important;
+  transition: margin-right 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-sizing: border-box !important;
+}
+
+/* Sānu paneļa konteiners */
+#austra-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100vh;
+  z-index: 2147483647;
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -6px 0 24px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #1e293b;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#austra-sidebar.open {
+  transform: translateX(0);
+}
+
+/* Labās malas cilne (Pull-tab), kad panelis ir aizvērts */
+#austra-sidebar-tab {
+  position: fixed;
+  top: 140px;
+  right: 0;
+  z-index: 2147483646;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #ffffff;
+  padding: 10px 8px 10px 10px;
+  border-radius: 8px 0 0 8px;
+  cursor: pointer;
+  box-shadow: -3px 3px 12px rgba(0, 0, 0, 0.18);
+  font-weight: 600;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#austra-sidebar-tab:hover {
+  padding-right: 12px;
+  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  box-shadow: -4px 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+#austra-sidebar-tab.hidden {
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Paneļa galvene (Header) */
+.austra-sidebar-header {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #ffffff;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.austra-sidebar-title {
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.2px;
+}
+
+.austra-sidebar-header-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.austra-header-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.austra-header-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Paneļa pamatdaļa (Scrollable Body) */
+.austra-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #f8fafc;
+}
+
+/* Pasūtījuma kopsavilkuma karte */
+.austra-order-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.austra-order-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.austra-order-code {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Galvenā rīcības poga */
+.austra-btn-action-main {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+}
+
+.austra-btn-action-main.btn-start {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.austra-btn-action-main.btn-start:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.austra-btn-action-main.btn-stop {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.austra-btn-action-main.btn-stop:hover {
+  background: #dc2626;
+}
+
+.austra-btn-action-main.btn-done {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.austra-btn-action-main.btn-done:hover {
+  background: #2563eb;
+}
+
+/* Statusa un taimera kārba */
+.austra-status-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.austra-status-text {
+  font-weight: 600;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+}
+
+.austra-timer {
+  font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+  background: #e2e8f0;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+/* 3 Indikatoru saraksts */
+.austra-indicators-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.austra-section-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
+}
+
+.austra-indicators-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.austra-indicator-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #f1f5f9;
+  font-size: 12.5px;
+}
+
+.austra-indicator-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+  font-weight: 500;
+}
+
+.austra-dot-badge {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  transition: all 0.3s;
+}
+
+.austra-dot-badge.green {
+  background: #22c55e;
+  box-shadow: 0 0 7px rgba(34, 197, 94, 0.7);
+}
+
+.austra-dot-badge.pending {
+  background: #e2e8f0;
+  border: 1px solid #94a3b8;
+}
+
+.austra-dot-badge.error {
+  background: #ef4444;
+  box-shadow: 0 0 7px rgba(239, 68, 68, 0.7);
+}
+
+/* Žurnāls (Activity Log) */
+.austra-log-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.austra-log-view {
+  font-size: 11px;
+  color: #475569;
+  max-height: 80px;
+  overflow-y: auto;
+  background: #f1f5f9;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Sānu paneļa kājene (Footer) */
+.austra-sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.austra-footer-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.austra-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.austra-btn-sound-test {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: #475569;
+  transition: background 0.15s;
+}
+
+.austra-btn-sound-test:hover {
+  background: #e2e8f0;
+}

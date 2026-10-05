@@ -1,0 +1,19 @@
+# Operētājsistēmas faili
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Redaktoru un IDE konfigurācijas
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Node & Python pagaidu faili
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+*.log

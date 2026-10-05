@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+  <meta charset="UTF-8">
+  <title>Austra ERP - Pasūtījumi - LPA123456 (KLIENTS SIA)</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .header {
+      background: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .order-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .actionbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #edf2f7;
+      padding-top: 14px;
+      margin-top: 10px;
+    }
+    .indicators-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    /* Austra ERP styled components classes */
+    .sc-kfPsKX {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .lmcRNk {
+      background-color: rgb(231, 234, 239);
+      border: 1px solid rgb(90, 95, 101);
+    }
+    .jfxJkt {
+      background-color: rgb(138, 209, 107) !important;
+      border: 1px solid rgb(70, 150, 45) !important;
+      box-shadow: 0 0 6px rgba(138, 209, 107, 0.7);
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .austra-btn-primary {
+      background: #1e3a8a;
+      color: white;
+    }
+    .austra-btn-primary:hover {
+      background: #172554;
+    }
+    .austra-btn-action {
+      background: #f1f5f9;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+    .austra-btn-action:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-group {
+      position: relative;
+      display: inline-block;
+    }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      min-width: 160px;
+      padding: 4px 0;
+    }
+    .dropdown-menu.show {
+      display: block;
+    }
+    .dropdown-item {
+      display: block;
+      padding: 8px 14px;
+      color: #334155;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .dropdown-item:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      font-weight: 600;
+      font-size: 12px;
+      color: #334155;
+    }
+    .status-badge.in-prod {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+
+    .test-control-panel {
+      margin-top: 30px;
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      padding: 16px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="order-title">
+      <span>Pasūtījumi / LPA123456 (KLIENTS SIA)</span>
+      
+      <!-- 3 Indikatori (CutRite, BOM, Montāža) -->
+      <div class="indicators-group">
+        <div data-bs-toggle="tooltip" class="sc-kfPsKX lmcRNk" id="dot-cutrite" aria-label="Nosūtīts uz CutRite" data-bs-original-title="Nosūtīts uz CutRite" title="Nosūtīts uz CutRite">&nbsp;</div>
+        <div data-bs-toggle="tooltip" class="sc-kfPsKX lmcRNk" id="dot-bom" aria-label="BOM izveidoti" data-bs-original-title="BOM izveidoti" title="BOM izveidoti">&nbsp;</div>
+        <div data-bs-toggle="tooltip" class="sc-kfPsKX lmcRNk" id="dot-assembly" aria-label="Montāžas pasūtījums izveidots" data-bs-original-title="Montāžas pasūtījums izveidots" title="Montāžas pasūtījums izveidots">&nbsp;</div>
+      </div>
+
+      <span class="status-badge" id="current-order-status">Statuss: Jauns</span>
+    </div>
+
+    <div class="actionbar">
+      <div>
+        <strong>Klients:</strong> KLIENTS SIA | <strong>Pasūtījuma Nr:</strong> 123456
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center;" id="action-container">
+        <!-- Poga Rezervēt materiālus -->
+        <div data-react-component="ExternalServiceButton">
+          <button class="btn austra-btn-primary false" id="btn-reserve-materials">Rezervēt materiālus</button>
+        </div>
+
+        <!-- Dropdown Mainīt statusu -->
+        <div class="btn-group">
+          <button type="button" class="btn austra-btn-action dropdown-toggle" id="btn-change-status">Mainīt statusu ▾</button>
+          <div class="dropdown-menu dropdown-menu-static" id="status-dropdown-menu">
+            <a class="dropdown-item dropdown-submenu-item null" data-action="manufacturing" href="#" id="action-manufacturing">Uz ražošanu </a>
+            <a class="dropdown-item dropdown-submenu-item null" data-action="rejected" href="#">Noraidīt</a>
+            <a class="dropdown-item dropdown-submenu-item null" data-action="reservations_cancelled" href="#">Rezervācijas atceltas</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Testa palīgpanelis (simulācijai un manuālai pārbaudei) -->
+  <div class="test-control-panel">
+    <h3 style="margin-top: 0; font-size: 14px;">🛠️ Testa simulācijas kontrole:</h3>
+    <p style="font-size: 13px; color: #b45309; margin: 0 0 10px 0;">
+      Šī ir simulācijas lapa, kas precīzi atveido Austra ERP lapas elementus.
+      Kad tiek nospiests "Rezervēt materiālus", tie pēc kārtas 5 sekunžu laikā automātiski kļūs zaļi.
+    </p>
+    <button class="btn" style="background: white; border-color: #d1d5db;" onclick="resetMockState()">Atiestatīt punktus uz tukšiem</button>
+    <button class="btn" style="background: #22c55e; color: white;" onclick="makeAllGreen()">Uzreiz padarīt visus 3 zaļus</button>
+  </div>
+
+  <script>
+    const dotCutrite = document.getElementById('dot-cutrite');
+    const dotBom = document.getElementById('dot-bom');
+    const dotAssembly = document.getElementById('dot-assembly');
+    const reserveBtn = document.getElementById('btn-reserve-materials');
+    const changeStatusBtn = document.getElementById('btn-change-status');
+    const dropdownMenu = document.getElementById('status-dropdown-menu');
+    const manufacturingAction = document.getElementById('action-manufacturing');
+    const currentOrderStatus = document.getElementById('current-order-status');
+
+    // Dropdown toggle
+    changeStatusBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdownMenu.classList.toggle('show');
+    });
+
+    document.addEventListener('click', () => {
+      dropdownMenu.classList.remove('show');
+    });
+
+    // Poga "Rezervēt materiālus"
+    reserveBtn.addEventListener('click', () => {
+      console.log('Nospieda "Rezervēt materiālus". Sākas simulācija...');
+      reserveBtn.disabled = true;
+      reserveBtn.innerText = 'Rezervējas...';
+
+      // 1. CutRite zaļš pēc 1.5 sek
+      setTimeout(() => {
+        dotCutrite.className = 'sc-kfPsKX jfxJkt';
+        console.log('1/3 CutRite zaļš!');
+      }, 1500);
+
+      // 2. BOM zaļš pēc 3 sek
+      setTimeout(() => {
+        dotBom.className = 'sc-kfPsKX jfxJkt';
+        console.log('2/3 BOM zaļš!');
+      }, 3000);
+
+      // 3. Montāža zaļš pēc 4.5 sek
+      setTimeout(() => {
+        dotAssembly.className = 'sc-kfPsKX jfxJkt';
+        reserveBtn.disabled = false;
+        reserveBtn.innerText = 'Rezervēt materiālus';
+        console.log('3/3 Visi zaļi!');
+      }, 4500);
+    });
+
+    // Poga "Uz ražošanu"
+    manufacturingAction.addEventListener('click', (e) => {
+      e.preventDefault();
+      dropdownMenu.classList.remove('show');
+      currentOrderStatus.innerText = 'Statuss: Uz ražošanu';
+      currentOrderStatus.className = 'status-badge in-prod';
+      console.log('>>> VEIKSMĪGI NOMAINĪTS STATUSS UZ RAŽOŠANU! <<<');
+      alert('Simulācija: Statuss veiksmīgi nomainīts uz "Uz ražošanu"!');
+    });
+
+    function resetMockState() {
+      dotCutrite.className = 'sc-kfPsKX lmcRNk';
+      dotBom.className = 'sc-kfPsKX lmcRNk';
+      dotAssembly.className = 'sc-kfPsKX lmcRNk';
+      currentOrderStatus.innerText = 'Statuss: Jauns';
+      currentOrderStatus.className = 'status-badge';
+    }
+
+    function makeAllGreen() {
+      dotCutrite.className = 'sc-kfPsKX jfxJkt';
+      dotBom.className = 'sc-kfPsKX jfxJkt';
+      dotAssembly.className = 'sc-kfPsKX jfxJkt';
+    }
+  </script>
+</body>
+</html>

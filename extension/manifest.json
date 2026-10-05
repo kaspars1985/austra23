@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Austra ERP - Auto-Rezervācija & Ražošana",
+  "version": "1.1.0",
+  "description": "Automatizē materiālu rezervēšanu un statusa maiņu uz 'Uz ražošanu' Austra ERP sistēmā ar integrētu sānu paneli.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Austra ERP Auto-Rezervācija (Atvērt/Aizvērt paneli)"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "notifications",
+    "storage",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://austra.amfurnitura.lv/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://austra.amfurnitura.lv/order_management/orders/*",
+        "http://localhost:*/*mock_austra_page.html*",
+        "http://127.0.0.1:*/*mock_austra_page.html*",
+        "file:///*mock_austra_page.html*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
