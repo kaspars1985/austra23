@@ -16,7 +16,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Austra ERP Auto-Rezervācija (Atvērt/Aizvērt paneli)"
+    "default_title": "Austra LPAxxx auto palaidējs (Atvērt/Aizvērt paneli)"
   },
   "background": {
     "service_worker": "background.js"

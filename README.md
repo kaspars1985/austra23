@@ -28,7 +28,7 @@ Strādājot ar pasūtījumiem sistēmā `https://austra.amfurnitura.lv/order_man
 
 - **Integrēts labās puses sānu panelis (Docked Sidebar):**
   - Panelis neaizsedz lapas saturu! Atverot paneli (320px platumā), viss Austra ERP saturs (teksti, tabulas, pogas) automātiski nobīdās pa kreisi.
-  - Ekrāna labajā malā atrodas eleganta cilne (`⚡ Auto-Ražošana ◀`), ar kuru paneli var jebkurā brīdī sakļaut vai atvērt.
+  - Ekrāna labajā malā atrodas eleganta cilne (`LPAxxx palaidējs ◀`), ar kuru paneli var jebkurā brīdī sakļaut vai atvērt.
 - **Viena klikšķa palaišana:**
   - Viena liela, skaidra poga **"🚀 Sākt auto-rezervāciju"**.
 - **Neatkarīgs daudzcilņu atbalsts (Multi-tab):**
@@ -55,8 +55,8 @@ Strādājot ar pasūtījumiem sistēmā `https://austra.amfurnitura.lv/order_man
 
 ```
 +-------------------------------------------------------------+-----------------------+
-|  Austra ERP Pasūtījums (100% brīvs, nekas netiek aizsegts)  | ⚡ Austra Auto-Ražošana |
-|                                                             | [Sakļaut ▶]           |
+|  Austra ERP Pasūtījums (100% brīvs, nekas netiek aizsegts)  | Austra LPAxxx auto    |
+|                                                             | palaidējs [Sakļaut ▶] |
 |  Pasūtījumi / LPA123456 (KLIENTS SIA)                      |-----------------------|
 |  [Rezervēt materiālus]  [Mainīt statusu ▾]                  | 🚀 Sākt auto-         |
 |                                                             |    rezervāciju        |

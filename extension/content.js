@@ -522,8 +522,8 @@
     pullTabEl = document.createElement('div');
     pullTabEl.id = 'austra-sidebar-tab';
     pullTabEl.className = 'hidden'; // sākotnēji paslēpta, jo panelis atvērsies uzreiz
-    pullTabEl.innerHTML = `<img src="${logoUrl}" class="austra-tab-logo-img" alt="Logo" /><span>Auto-Ražošana ◀</span>`;
-    pullTabEl.title = 'Atvērt Austra Auto-Ražošanas sānu paneli';
+    pullTabEl.innerHTML = `<img src="${logoUrl}" class="austra-tab-logo-img" alt="Logo" /><span>LPAxxx palaidējs ◀</span>`;
+    pullTabEl.title = 'Atvērt Austra LPAxxx auto palaidēja sānu paneli';
     pullTabEl.addEventListener('click', openSidebar);
     document.body.appendChild(pullTabEl);
 
@@ -538,7 +538,7 @@
       <div class="austra-sidebar-header">
         <div class="austra-sidebar-title">
           <img src="${logoUrl}" class="austra-header-logo-img" alt="Austra" />
-          <span>Austra Auto-Ražošana</span>
+          <span>Austra LPAxxx auto palaidējs</span>
         </div>
         <div class="austra-sidebar-header-btns">
           <button class="austra-header-btn" id="austra-btn-collapse" title="Sakļaut paneli un atjaunot pilnu lapas platumu">

@@ -82,11 +82,12 @@ body.austra-sidebar-open {
 
 .austra-sidebar-title {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  letter-spacing: 0.2px;
+  gap: 7px;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
 }
 
 .austra-header-logo-img {
