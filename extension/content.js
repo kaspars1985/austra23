@@ -13,7 +13,7 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.0';
+  const CURRENT_VERSION = '1.2.1';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
 
@@ -33,6 +33,43 @@
     soundEnabled: true,
     notificationsEnabled: true
   };
+
+  // --- SESSION PERSISTENCE (Pāri lapas pārlādēm) ---
+  function getSessionStorageKey() {
+    const code = getOrderCode();
+    return `austra_auto_session_${code}`;
+  }
+
+  function saveSessionState() {
+    try {
+      const key = getSessionStorageKey();
+      sessionStorage.setItem(key, JSON.stringify({
+        status: STATE.status,
+        startTime: STATE.startTime
+      }));
+    } catch (e) {}
+  }
+
+  function loadSessionState() {
+    try {
+      const key = getSessionStorageKey();
+      const raw = sessionStorage.getItem(key);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (data && data.startTime && (Date.now() - data.startTime < CONFIG.maxTimeoutMs)) {
+        return data;
+      }
+      clearSessionState();
+    } catch (e) {}
+    return null;
+  }
+
+  function clearSessionState() {
+    try {
+      const key = getSessionStorageKey();
+      sessionStorage.removeItem(key);
+    } catch (e) {}
+  }
 
   // --- VERSION CHECKER & COMPARISON ---
   function compareSemver(v1, v2) {
@@ -534,13 +571,15 @@
 
   async function startAutomation() {
     logActivity('Auto-rezervācijas process uzsākts!');
-    STATE.status = 'RESERVING';
+    STATE.status = 'WAITING';
     STATE.startTime = Date.now();
+    saveSessionState();
 
     updateUIState();
 
     if (STATE.timerInterval) clearInterval(STATE.timerInterval);
     STATE.timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
 
     const initialCheck = updateIndicatorBadges();
     if (initialCheck.allGreen) {
@@ -557,8 +596,6 @@
       logActivity('Poga "Rezervēt materiālus" netika atrasta (iespējams, jau nospiesta). Turpinu novērošanu.');
     }
 
-    STATE.status = 'WAITING';
-    updateUIState();
     startMonitoring();
   }
 
@@ -573,7 +610,7 @@
         return;
       }
 
-      if (res.allGreen) {
+      if (res.allGreen && (STATE.status === 'WAITING' || STATE.status === 'RESERVING')) {
         logActivity('🎉 Visi 3 indikatori ir zaļi! Mainu statusu...');
         clearInterval(STATE.pollInterval);
         STATE.pollInterval = null;
@@ -583,8 +620,9 @@
 
     if (!STATE.observer) {
       STATE.observer = new MutationObserver(() => {
+        if (STATE.status !== 'WAITING' && STATE.status !== 'RESERVING') return;
         const res = updateIndicatorBadges();
-        if (res.allGreen && STATE.status === 'WAITING') {
+        if (res.allGreen) {
           logActivity('🎉 Indikatoru izmaiņas pamanītas! Mainu statusu...');
           if (STATE.pollInterval) clearInterval(STATE.pollInterval);
           STATE.pollInterval = null;
@@ -597,12 +635,14 @@
 
   async function completeStatusChange() {
     STATE.status = 'CHANGING_STATUS';
+    clearSessionState();
     updateUIState();
 
     try {
       await triggerStatusChangeToManufacturing();
 
       STATE.status = 'COMPLETED';
+      clearSessionState();
       updateUIState();
       stopTimer();
 
@@ -620,6 +660,7 @@
 
   function stopAutomation(reason) {
     logActivity(reason || 'Process apturēts.');
+    clearSessionState();
     STATE.status = 'IDLE';
     stopTimer();
     updateUIState();
@@ -627,6 +668,7 @@
 
   function handleTimeout() {
     stopTimer();
+    clearSessionState();
     STATE.status = 'ERROR';
     updateUIState();
     logActivity('⚠️ Taimauts (15 min) pārsniegts!');
@@ -639,6 +681,7 @@
 
   function handleError(msg) {
     stopTimer();
+    clearSessionState();
     STATE.status = 'ERROR';
     updateUIState();
     logActivity(`⚠️ ${msg}`);
@@ -755,6 +798,31 @@
 
     createSidebarUI();
     console.log(`[Austra Addon v${CURRENT_VERSION}] Sānu panelis sekmīgi inicializēts.`);
+
+    // Pārbaudām, vai šim pasūtījumam jau bija aktīvs process pirms lapas pārlādes!
+    const savedSession = loadSessionState();
+    if (savedSession && (savedSession.status === 'WAITING' || savedSession.status === 'RESERVING')) {
+      STATE.status = 'WAITING';
+      STATE.startTime = savedSession.startTime;
+      saveSessionState();
+
+      updateUIState();
+      updateIndicatorBadges();
+
+      if (STATE.timerInterval) clearInterval(STATE.timerInterval);
+      STATE.timerInterval = setInterval(updateTimer, 1000);
+      updateTimer();
+
+      logActivity('Turpinu uzraudzību pēc lapas pārlādes...');
+
+      const check = updateIndicatorBadges();
+      if (check.allGreen) {
+        logActivity('🎉 Visi 3 indikatori jau ir zaļi! Mainu statusu...');
+        completeStatusChange();
+      } else {
+        startMonitoring();
+      }
+    }
 
     // Automātiska atjauninājumu pārbaude fonā (pēc 2.5 sekundēm)
     setTimeout(() => {

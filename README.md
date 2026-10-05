@@ -32,6 +32,8 @@ Strādājot ar pasūtījumiem sistēmā `https://austra.amfurnitura.lv/order_man
 - **Reāllaika hronometrs un drošības taimauts:**
   - Rāda, cik sekundes vai minūtes konkrētais pasūtījums jau rezervējas.
   - Iebūvēts 15 minūšu drošības taimauts, kas brīdina ar skaņas signālu, ja servera process ir iestrēdzis.
+- **Stāvokļa nepārtrauktība (Session Persistence pāri pārlādēm):**
+  - Kad tiek nospiests "Rezervēt materiālus" un lapa pārlādējas, addons atceras sākuma laiku un statusu (`sessionStorage`). Pēc pārlādes taimeris neapstājas uz 00:00 un uzraudzība uzreiz turpinās.
 - **Audio signāli (Web Audio API):**
   - Nav atkarības no ārējiem MP3 failiem vai interneta bibliotēkām – skaņa tiek ģenerēta tieši pārlūka dzinējā.
   - Var ieslēgt vai izslēgt ar vienu klikšķi.
