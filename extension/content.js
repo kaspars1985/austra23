@@ -13,13 +13,13 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.1';
+  const CURRENT_VERSION = '1.2.2';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
 
   const CONFIG = {
     maxTimeoutMs: 15 * 60 * 1000, // 15 minūtes
-    pollIntervalMs: 1500,          // pārbaude ik pēc 1.5 sekundēm
+    pollIntervalMs: 1000,          // viegla pārbaude ik pēc 1 sekundes
     targetUrlRegex: /\/order_management\/orders\/\d+|mock_austra_page/i
   };
 
@@ -532,10 +532,10 @@
     const updateBadge = (id, dotState) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.className = 'austra-dot-badge';
-      if (dotState.isGreen) el.classList.add('green');
-      else if (dotState.isRed) el.classList.add('error');
-      else el.classList.add('pending');
+      const targetClass = dotState.isGreen ? 'austra-dot-badge green' : (dotState.isRed ? 'austra-dot-badge error' : 'austra-dot-badge pending');
+      if (el.className !== targetClass) {
+        el.className = targetClass;
+      }
     };
 
     updateBadge('austra-sidebar-dot-cutrite', res.states.cutrite);
@@ -588,6 +588,9 @@
       return;
     }
 
+    // Sākam vienmērīgu 1-sekundes uzraudzību
+    startMonitoring();
+
     const reserveBtn = findReserveButton();
     if (reserveBtn) {
       logActivity('Nospiež "Rezervēt materiālus"...');
@@ -595,14 +598,14 @@
     } else {
       logActivity('Poga "Rezervēt materiālus" netika atrasta (iespējams, jau nospiesta). Turpinu novērošanu.');
     }
-
-    startMonitoring();
   }
 
   function startMonitoring() {
     if (STATE.pollInterval) clearInterval(STATE.pollInterval);
 
     STATE.pollInterval = setInterval(async () => {
+      if (STATE.status !== 'WAITING' && STATE.status !== 'RESERVING') return;
+
       const res = updateIndicatorBadges();
 
       if (res.anyRed) {
@@ -610,27 +613,13 @@
         return;
       }
 
-      if (res.allGreen && (STATE.status === 'WAITING' || STATE.status === 'RESERVING')) {
+      if (res.allGreen) {
         logActivity('🎉 Visi 3 indikatori ir zaļi! Mainu statusu...');
         clearInterval(STATE.pollInterval);
         STATE.pollInterval = null;
         await completeStatusChange();
       }
     }, CONFIG.pollIntervalMs);
-
-    if (!STATE.observer) {
-      STATE.observer = new MutationObserver(() => {
-        if (STATE.status !== 'WAITING' && STATE.status !== 'RESERVING') return;
-        const res = updateIndicatorBadges();
-        if (res.allGreen) {
-          logActivity('🎉 Indikatoru izmaiņas pamanītas! Mainu statusu...');
-          if (STATE.pollInterval) clearInterval(STATE.pollInterval);
-          STATE.pollInterval = null;
-          completeStatusChange();
-        }
-      });
-      STATE.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
-    }
   }
 
   async function completeStatusChange() {
@@ -697,10 +686,6 @@
     if (STATE.pollInterval) {
       clearInterval(STATE.pollInterval);
       STATE.pollInterval = null;
-    }
-    if (STATE.observer) {
-      STATE.observer.disconnect();
-      STATE.observer = null;
     }
   }
 
