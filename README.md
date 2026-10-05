@@ -14,8 +14,9 @@ Strādājot ar pasūtījumiem sistēmā `https://austra.amfurnitura.lv/order_man
    - ✂️ **Nosūtīts uz CutRite**
    - 📋 **BOM izveidoti**
    - 🔨 **Montāžas pasūtījums izveidots**
-3. Brīdī, kad visi 3 punkti kļūst zaļi, paplašinājums **pats automātiski nomaina statusu uz "Uz ražošanu"**.
-4. Atskaņo patīkamu skaņas melodiju un nosūta darbvirsmas paziņojumu.
+3. Brīdī, kad visi 3 punkti kļūst zaļi, paplašinājums **pats automātiski izvēlas "Uz ražošanu" un apstiprina uznirstošo logu (modālo dialogu)**.
+4. Ielogo katru darbību sānu paneļa **Darbību žurnālā**.
+5. Atskaņo patīkamu skaņas melodiju un nosūta darbvirsmas paziņojumu.
 
 ---
 
@@ -148,6 +149,23 @@ Tas ir sākuma stāvoklis – addons ir veiksmīgi pieslēdzies pasūtījumam un
 
 #### Vai paplašinājums sūta datus uz ārējiem serveriem?
 Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ārējus serverus vai trešo pušu analītiku.
+
+---
+
+## 📋 Versiju Vēsture (Changelog)
+
+- **v1.2.3**
+  - Automātiski atrod un nospiež apstiprinājuma pogu modālajā logā *"Uz ražošanu"*.
+  - Detalizēts apstiprināšanas procesa ieraksts sānu paneļa *Darbību žurnālā*.
+  - Droša pabeigtības stāvokļa saglabāšana pat gadījumā, ja modāļa apstiprināšana izraisa tūlītēju lapas pārlādi.
+- **v1.2.2**
+  - Aizstāts lapas `MutationObserver` ar vienmērīgu 1s ciklu, novēršot pārlūka cilnes uzkāršanos.
+  - Paaugstināta indikatoru meklēšanas precizitāte, izslēdzot blakus esošo tabulu rindu kļūdainu nolasīšanu.
+- **v1.2.1**
+  - Pievienota sesijas saglabāšana (`sessionStorage`), kas novērš taimera atgriešanos uz `00:00` pēc "Rezervēt materiālus" nospiešanas un lapas pārlādes.
+- **v1.2.0**
+  - Ieviesta automātiskā atjauninājumu pārbaude pret GitHub repozitoriju.
+  - Pielāgots kājenes formāts: `kasparsciematnieks@amf.lv © 2026`.
 
 ---
 

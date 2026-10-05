@@ -13,7 +13,7 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.2';
+  const CURRENT_VERSION = '1.2.3';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
 
@@ -331,34 +331,149 @@
     }
   }
 
+  function findModalConfirmButton() {
+    // 1. Meklējam aktīvos modālos dialogu konteinerus
+    const modalSelectors = [
+      '.modal',
+      '.modal-dialog',
+      '.modal-content',
+      '[role="dialog"]',
+      '.dialog',
+      '.popup',
+      '.sweet-alert',
+      '.swal2-container',
+      '.swal2-modal',
+      'div[class*="modal" i]',
+      'div[class*="dialog" i]',
+      'div[class*="popup" i]'
+    ];
+
+    const modals = Array.from(document.querySelectorAll(modalSelectors.join(', '))).filter(el => {
+      if (el.closest('#austra-sidebar') || el.id === 'austra-sidebar' || el.closest('#austra-pull-tab')) return false;
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+    });
+
+    // A. Prioritāte: poga iekš modālā loga ar tekstu "Uz ražošanu"
+    for (const modal of modals) {
+      const btns = Array.from(modal.querySelectorAll('button, input[type="submit"], input[type="button"], a.btn, [role="button"], .btn'));
+      for (const btn of btns) {
+        if (btn.closest('#austra-sidebar')) continue;
+        const text = (btn.innerText || btn.value || '').trim();
+        if (/uz ražošanu/i.test(text)) {
+          return btn;
+        }
+      }
+    }
+
+    // B. Prioritāte: jebkura poga uz lapas ar tekstu "Uz ražošanu", kas NAV dropdown izvēlnē un NAV sidebarā
+    const allButtons = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"], a.btn, [role="button"], .btn'));
+    for (const btn of allButtons) {
+      if (btn.closest('#austra-sidebar') || btn.closest('#austra-pull-tab')) continue;
+      if (btn.closest('.dropdown-menu') || btn.closest('#status-dropdown-menu') || btn.classList.contains('dropdown-item')) continue;
+      if (btn.getAttribute('data-action') === 'manufacturing' && btn.tagName === 'A' && !btn.classList.contains('btn')) continue;
+
+      const text = (btn.innerText || btn.value || '').trim();
+      if (/uz ražošanu/i.test(text)) {
+        return btn;
+      }
+    }
+
+    // C. Prioritāte: ja modālis ir atvērts (virsraksts satur ražošanu/statusu), meklējam apstiprinājuma pogu
+    for (const modal of modals) {
+      const modalText = (modal.innerText || '').toLowerCase();
+      if (modalText.includes('ražošanu') || modalText.includes('apstiprin')) {
+        const actionBtns = Array.from(modal.querySelectorAll('.modal-footer button, .modal-footer input, .modal-footer .btn, button[type="submit"], .btn-success, .btn-primary, .btn-info'));
+        for (const btn of actionBtns) {
+          if (btn.closest('#austra-sidebar')) continue;
+          const text = (btn.innerText || btn.value || '').trim();
+          if (!/atcelt|cancel|aizvērt|close|atpakaļ/i.test(text)) {
+            return btn;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  async function waitForAndConfirmModal(timeoutMs = 4500) {
+    logActivity('Gaida apstiprinājuma logu...');
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+      const confirmBtn = findModalConfirmButton();
+      if (confirmBtn) {
+        logActivity('Apstiprina modālo logu "Uz ražošanu"...');
+        await new Promise(r => setTimeout(r, 250));
+        dispatchClick(confirmBtn);
+        confirmBtn.click();
+        await new Promise(r => setTimeout(r, 400));
+        logActivity('Modālais logs veiksmīgi apstiprināts!');
+        return true;
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    logActivity('Modālais logs netika konstatēts (varbūt nav nepieciešams).');
+    return false;
+  }
+
   async function triggerStatusChangeToManufacturing() {
     logActivity('Meklē izvēlni "Mainīt statusu"...');
 
     // 1. Meklējam pogu "Mainīt statusu"
     const dropdownBtns = Array.from(document.querySelectorAll('button.dropdown-toggle, .dropdown-toggle, button'));
-    const changeStatusBtn = dropdownBtns.find(b => /mainīt statusu/i.test(b.innerText || ''));
+    const changeStatusBtn = dropdownBtns.find(b => {
+      if (b.closest('#austra-sidebar')) return false;
+      return /mainīt statusu/i.test(b.innerText || '');
+    });
 
     if (changeStatusBtn) {
       logActivity('Atver statusa izvēlni...');
       dispatchClick(changeStatusBtn);
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 250));
     }
 
-    // 2. Meklējam statusa opciju "Uz ražošanu"
-    const menuLinks = Array.from(document.querySelectorAll('a[data-action="manufacturing"], a, button, .dropdown-item'));
-    const manufacturingLink = menuLinks.find(a => {
-      const action = a.getAttribute('data-action') || '';
-      const text = (a.innerText || '').trim();
-      return action === 'manufacturing' || /uz ražošanu/i.test(text);
-    });
+    // 2. Meklējam statusa opciju "Uz ražošanu" dropdown izvēlnē
+    let manufacturingLink = null;
+    const dropdownMenu = changeStatusBtn ? changeStatusBtn.closest('.btn-group, .dropdown, div')?.querySelector('.dropdown-menu') : document.querySelector('.dropdown-menu');
+    if (dropdownMenu) {
+      const items = Array.from(dropdownMenu.querySelectorAll('a, button, .dropdown-item'));
+      manufacturingLink = items.find(a => {
+        const action = a.getAttribute('data-action') || '';
+        const text = (a.innerText || '').trim();
+        return action === 'manufacturing' || /uz ražošanu/i.test(text);
+      });
+    }
 
     if (!manufacturingLink) {
-      throw new Error('Neizdevās atrast izvēles opciju "Uz ražošanu"!');
+      const menuLinks = Array.from(document.querySelectorAll('a[data-action="manufacturing"], .dropdown-item, a, button'));
+      manufacturingLink = menuLinks.find(a => {
+        if (a.closest('#austra-sidebar')) return false;
+        const action = a.getAttribute('data-action') || '';
+        const text = (a.innerText || '').trim();
+        return action === 'manufacturing' || (a.closest('.dropdown-menu') && /uz ražošanu/i.test(text));
+      });
     }
 
-    logActivity('Nospiež "Uz ražošanu"...');
+    if (!manufacturingLink) {
+      throw new Error('Neizdevās atrast izvēles opciju "Uz ražošanu" izvēlnē!');
+    }
+
+    logActivity('Izvēlas "Uz ražošanu"...');
     dispatchClick(manufacturingLink);
     manufacturingLink.click();
+
+    // Saglabājam pabeigšanas marķieri gadījumam, ja modāļa apstiprināšana izraisa lapas pārlādi
+    const orderCode = getOrderCode();
+    try {
+      sessionStorage.setItem(`austra_completed_${orderCode}`, String(Date.now()));
+    } catch (e) {}
+
+    // 3. Gaidām un apstiprinām modālo logu
+    await waitForAndConfirmModal(4500);
+
     logActivity('Statuss nomainīts uz "Uz ražošanu"!');
   }
 
@@ -571,6 +686,11 @@
 
   async function startAutomation() {
     logActivity('Auto-rezervācijas process uzsākts!');
+    const currentCode = getOrderCode();
+    try {
+      sessionStorage.removeItem(`austra_completed_${currentCode}`);
+    } catch (e) {}
+
     STATE.status = 'WAITING';
     STATE.startTime = Date.now();
     saveSessionState();
@@ -784,28 +904,51 @@
     createSidebarUI();
     console.log(`[Austra Addon v${CURRENT_VERSION}] Sānu panelis sekmīgi inicializēts.`);
 
-    // Pārbaudām, vai šim pasūtījumam jau bija aktīvs process pirms lapas pārlādes!
-    const savedSession = loadSessionState();
-    if (savedSession && (savedSession.status === 'WAITING' || savedSession.status === 'RESERVING')) {
-      STATE.status = 'WAITING';
-      STATE.startTime = savedSession.startTime;
-      saveSessionState();
+    // 1. Pārbaudām, vai šis pasūtījums tikko tika pabeigts pirms lapas pārlādes!
+    const currentCode = getOrderCode();
+    let justCompleted = null;
+    try {
+      justCompleted = sessionStorage.getItem(`austra_completed_${currentCode}`);
+    } catch (e) {}
 
+    if (justCompleted && (Date.now() - parseInt(justCompleted, 10) < 60000)) {
+      try {
+        sessionStorage.removeItem(`austra_completed_${currentCode}`);
+      } catch (e) {}
+      clearSessionState();
+      STATE.status = 'COMPLETED';
       updateUIState();
       updateIndicatorBadges();
+      logActivity(`Veiksmīgi pabeigts pasūtījumam ${currentCode}!`);
+      playSound('success');
+      sendNotification(
+        'Austra ERP: Statuss nomainīts!',
+        `Pasūtījums ${currentCode} ir veiksmīgi rezervēts un nodots "Uz ražošanu".`
+      );
+    } else {
+      // 2. Pārbaudām, vai šim pasūtījumam jau bija aktīvs process pirms lapas pārlādes!
+      const savedSession = loadSessionState();
+      if (savedSession && (savedSession.status === 'WAITING' || savedSession.status === 'RESERVING')) {
+        STATE.status = 'WAITING';
+        STATE.startTime = savedSession.startTime;
+        saveSessionState();
 
-      if (STATE.timerInterval) clearInterval(STATE.timerInterval);
-      STATE.timerInterval = setInterval(updateTimer, 1000);
-      updateTimer();
+        updateUIState();
+        updateIndicatorBadges();
 
-      logActivity('Turpinu uzraudzību pēc lapas pārlādes...');
+        if (STATE.timerInterval) clearInterval(STATE.timerInterval);
+        STATE.timerInterval = setInterval(updateTimer, 1000);
+        updateTimer();
 
-      const check = updateIndicatorBadges();
-      if (check.allGreen) {
-        logActivity('🎉 Visi 3 indikatori jau ir zaļi! Mainu statusu...');
-        completeStatusChange();
-      } else {
-        startMonitoring();
+        logActivity('Turpinu uzraudzību pēc lapas pārlādes...');
+
+        const check = updateIndicatorBadges();
+        if (check.allGreen) {
+          logActivity('🎉 Visi 3 indikatori jau ir zaļi! Mainu statusu...');
+          completeStatusChange();
+        } else {
+          startMonitoring();
+        }
       }
     }
 

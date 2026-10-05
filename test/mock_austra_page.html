@@ -191,6 +191,23 @@
     <button class="btn" style="background: #22c55e; color: white;" onclick="makeAllGreen()">Uzreiz padarīt visus 3 zaļus</button>
   </div>
 
+  <!-- Modālais logs "Uz ražošanu" (tieši tāds kā Austra ERP sistēmā) -->
+  <div class="modal fade" id="modal-manufacturing" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.45); z-index: 1050; align-items: flex-start; justify-content: center; padding-top: 100px;">
+    <div class="modal-dialog" style="background: white; border-radius: 8px; width: 520px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); overflow: hidden; display: flex; flex-direction: column;">
+      <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: #1e293b;">Uz ražošanu</h4>
+        <button type="button" onclick="closeManufacturingModal()" style="border: none; background: transparent; font-size: 20px; cursor: pointer; color: #64748b;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 24px 20px; font-size: 14px; color: #334155; min-height: 80px;">
+        Vai apstiprināt pasūtījuma nodošanu ražošanā?
+      </div>
+      <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn" onclick="closeManufacturingModal()" style="padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: pointer;">Atcelt</button>
+        <button type="button" class="btn btn-success" id="btn-modal-confirm-manufacturing" style="padding: 8px 20px; border: none; border-radius: 6px; background: #009688; color: white; font-weight: 600; cursor: pointer;">Uz ražošanu</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const dotCutrite = document.getElementById('dot-cutrite');
     const dotBom = document.getElementById('dot-bom');
@@ -200,6 +217,16 @@
     const dropdownMenu = document.getElementById('status-dropdown-menu');
     const manufacturingAction = document.getElementById('action-manufacturing');
     const currentOrderStatus = document.getElementById('current-order-status');
+
+    function openManufacturingModal() {
+      const m = document.getElementById('modal-manufacturing');
+      if (m) m.style.display = 'flex';
+    }
+
+    function closeManufacturingModal() {
+      const m = document.getElementById('modal-manufacturing');
+      if (m) m.style.display = 'none';
+    }
 
     // Dropdown toggle
     changeStatusBtn.addEventListener('click', (e) => {
@@ -238,14 +265,20 @@
       }, 4500);
     });
 
-    // Poga "Uz ražošanu"
+    // Poga "Uz ražošanu" dropdown izvēlnē
     manufacturingAction.addEventListener('click', (e) => {
       e.preventDefault();
       dropdownMenu.classList.remove('show');
+      console.log('Izvēlēts "Uz ražošanu", atver apstiprināšanas modālo logu...');
+      openManufacturingModal();
+    });
+
+    // Poga "Uz ražošanu" modālajā logā
+    document.getElementById('btn-modal-confirm-manufacturing').addEventListener('click', () => {
+      closeManufacturingModal();
       currentOrderStatus.innerText = 'Statuss: Uz ražošanu';
       currentOrderStatus.className = 'status-badge in-prod';
-      console.log('>>> VEIKSMĪGI NOMAINĪTS STATUSS UZ RAŽOŠANU! <<<');
-      alert('Simulācija: Statuss veiksmīgi nomainīts uz "Uz ražošanu"!');
+      console.log('>>> VEIKSMĪGI APSTIPRINĀTS MODĀLAIS LOGS UN NOMAINĪTS STATUSS UZ RAŽOŠANU! <<<');
     });
 
     function resetMockState() {
