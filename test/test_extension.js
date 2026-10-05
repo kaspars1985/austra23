@@ -82,4 +82,23 @@ const greenTest = evaluateTestDot('sc-kfPsKX jfxJkt', 'rgb(138, 209, 107)');
 if (greenTest.isGreen !== true) throw new Error('Green dot failed detection!');
 console.log('✓ Green dot (rgb 138,209,107, class jfxJkt) correctly identified as green');
 
+// 6. Test Semver comparison logic
+function compareSemver(v1, v2) {
+  const p1 = (v1 || '0').replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+  const p2 = (v2 || '0').replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+    const n1 = p1[i] || 0;
+    const n2 = p2[i] || 0;
+    if (n1 > n2) return 1;
+    if (n1 < n2) return -1;
+  }
+  return 0;
+}
+
+if (compareSemver('1.2.1', '1.2.0') <= 0) throw new Error('Semver 1.2.1 should be greater than 1.2.0');
+if (compareSemver('2.0.0', '1.9.9') <= 0) throw new Error('Semver 2.0.0 should be greater than 1.9.9');
+if (compareSemver('1.2.0', '1.2.0') !== 0) throw new Error('Semver 1.2.0 should be equal to 1.2.0');
+if (compareSemver('1.1.9', '1.2.0') >= 0) throw new Error('Semver 1.1.9 should be less than 1.2.0');
+console.log('✓ Semver update comparison correctly detects newer, older, and equal versions');
+
 console.log('\n>>> ALL AUTOMATED TESTS PASSED SUCCESSFULLY! <<<');

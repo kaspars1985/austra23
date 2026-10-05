@@ -13,6 +13,10 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
+  const CURRENT_VERSION = '1.2.0';
+  const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
+  const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
+
   const CONFIG = {
     maxTimeoutMs: 15 * 60 * 1000, // 15 minūtes
     pollIntervalMs: 1500,          // pārbaude ik pēc 1.5 sekundēm
@@ -29,6 +33,81 @@
     soundEnabled: true,
     notificationsEnabled: true
   };
+
+  // --- VERSION CHECKER & COMPARISON ---
+  function compareSemver(v1, v2) {
+    const p1 = (v1 || '0').replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+    const p2 = (v2 || '0').replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+      const n1 = p1[i] || 0;
+      const n2 = p2[i] || 0;
+      if (n1 > n2) return 1;
+      if (n1 < n2) return -1;
+    }
+    return 0;
+  }
+
+  async function checkForUpdates(isManual = false) {
+    try {
+      const checkBtn = document.getElementById('austra-btn-check-update');
+      if (isManual && checkBtn) {
+        checkBtn.innerText = 'Pārbauda...';
+      }
+
+      const res = await fetch(GITHUB_RAW_MANIFEST, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const remoteVer = data.version;
+
+      if (remoteVer && compareSemver(remoteVer, CURRENT_VERSION) > 0) {
+        showUpdateBanner(remoteVer);
+        logActivity(`🚀 Pieejams atjauninājums: v${remoteVer} (pašreizējā v${CURRENT_VERSION})`);
+        if (isManual) {
+          sendNotification(
+            'Austra ERP: Pieejams atjauninājums!',
+            `Ir pieejama jaunāka versija v${remoteVer}. Klikšķiniet, lai atvērtu GitHub.`
+          );
+        }
+      } else {
+        if (isManual) {
+          if (checkBtn) checkBtn.innerText = 'Jaunākā versija! ✓';
+          setTimeout(() => { if (checkBtn) checkBtn.innerText = 'Pārbaudīt atjauninājumu'; }, 3000);
+          logActivity(`Jums ir jaunākā versija (v${CURRENT_VERSION}).`);
+        }
+      }
+    } catch (e) {
+      console.warn('[Austra Addon] Atjauninājumu pārbaudes kļūda:', e);
+      const checkBtn = document.getElementById('austra-btn-check-update');
+      if (isManual && checkBtn) {
+        checkBtn.innerText = 'Neizdevās pārbaudīt';
+        setTimeout(() => { if (checkBtn) checkBtn.innerText = 'Pārbaudīt atjauninājumu'; }, 3000);
+      }
+    }
+  }
+
+  function showUpdateBanner(newVersion) {
+    if (document.getElementById('austra-update-banner')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'austra-update-banner';
+    banner.className = 'austra-update-banner';
+    banner.innerHTML = `
+      <div class="austra-update-title">
+        <span>🚀</span> Pieejams atjauninājums v${newVersion}!
+      </div>
+      <div class="austra-update-desc">
+        Ir izlaista jaunāka paplašinājuma versija (Jums ir v${CURRENT_VERSION}).
+      </div>
+      <a href="${GITHUB_REPO_URL}" target="_blank" class="austra-btn-update-link">
+        Atvērt GitHub un atjaunināt ↗
+      </a>
+    `;
+
+    const body = document.querySelector('.austra-sidebar-body');
+    if (body) {
+      body.insertBefore(banner, body.firstChild);
+    }
+  }
 
   // --- AUDIO SYNTHESIZER (Web Audio API) ---
   function playSound(type) {
@@ -362,8 +441,9 @@
           </label>
           <button class="austra-btn-sound-test" id="austra-btn-test-sound" title="Pārbaudīt melodisko čaimu">🔔 Testēt</button>
         </div>
-        <div style="font-size: 10.5px; color: #94a3b8; text-align: center;">
-          AM Furnitūra &copy; 2026 • v1.1.0
+        <div class="austra-version-row">
+          <span>AMF &copy; 2026 • v${CURRENT_VERSION}</span>
+          <button class="austra-btn-check-update" id="austra-btn-check-update" title="Pārbaudīt, vai GitHub ir pieejama jaunāka versija">Pārbaudīt atjauninājumu</button>
         </div>
       </div>
     `;
@@ -375,6 +455,11 @@
 
     const actionBtn = sidebarEl.querySelector('#austra-sidebar-action-btn');
     actionBtn.addEventListener('click', handleActionClick);
+
+    const checkUpdateBtn = sidebarEl.querySelector('#austra-btn-check-update');
+    if (checkUpdateBtn) {
+      checkUpdateBtn.addEventListener('click', () => checkForUpdates(true));
+    }
 
     const soundCheck = sidebarEl.querySelector('#austra-check-sound');
     soundCheck.addEventListener('change', (e) => {
@@ -669,7 +754,12 @@
     }
 
     createSidebarUI();
-    console.log('[Austra Addon] Sānu panelis sekmīgi inicializēts.');
+    console.log(`[Austra Addon v${CURRENT_VERSION}] Sānu panelis sekmīgi inicializēts.`);
+
+    // Automātiska atjauninājumu pārbaude fonā (pēc 2.5 sekundēm)
+    setTimeout(() => {
+      checkForUpdates(false);
+    }, 2500);
   }
 
   if (document.readyState === 'loading') {

@@ -35,6 +35,10 @@ Strādājot ar pasūtījumiem sistēmā `https://austra.amfurnitura.lv/order_man
 - **Audio signāli (Web Audio API):**
   - Nav atkarības no ārējiem MP3 failiem vai interneta bibliotēkām – skaņa tiek ģenerēta tieši pārlūka dzinējā.
   - Var ieslēgt vai izslēgt ar vienu klikšķi.
+- **Automātiska atjauninājumu pārbaude (Self-Update Checker):**
+  - Paplašinājums pats fonā pārbauda GitHub repozitoriju (`github.com/kaspars1985/austra23`).
+  - Ja ir izlaista jaunāka versija, sānu panelī uzreiz parādās pamanāma paziņojuma josla ar pogu *"Atvērt GitHub un atjaunināt ↗"*.
+  - Sānu paneļa kājenē ir redzama pašreizējā versija un poga *"Pārbaudīt atjauninājumu"* tūlītējai manuālai pārbaudei.
 - **Pārlūka rīkjoslas integrācija:**
   - Klikšķis uz paplašinājuma ikonas Edge/Chrome rīkjoslā tieši atver vai aizver sānu paneli aktīvajā cilnē.
 
