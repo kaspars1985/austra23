@@ -152,4 +152,4 @@ Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ār
 ## 📄 Licence
 
 Izstrādāts uzņēmuma AM Furnitūra iekšējām darba ērtībām.  
-Autors: Kaspars Ciematnieks &copy; 2026.
+Autors: Kaspars Ciematnieks (kasparsciematnieks@amf.lv) &copy; 2026.

@@ -442,7 +442,7 @@
           <button class="austra-btn-sound-test" id="austra-btn-test-sound" title="Pārbaudīt melodisko čaimu">🔔 Testēt</button>
         </div>
         <div class="austra-version-row">
-          <span>AMF &copy; 2026 • v${CURRENT_VERSION}</span>
+          <span>kasparsciematnieks@amf.lv &copy; 2026 • v${CURRENT_VERSION}</span>
           <button class="austra-btn-check-update" id="austra-btn-check-update" title="Pārbaudīt, vai GitHub ir pieejama jaunāka versija">Pārbaudīt atjauninājumu</button>
         </div>
       </div>
