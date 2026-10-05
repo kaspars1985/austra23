@@ -1,0 +1,32 @@
+name: Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Package and Release Extension
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Package extension (.zip)
+        run: |
+          cd extension
+          zip -r ../austra-extension-${{ github.ref_name }}.zip *
+          cd ..
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Austra LPAxxx auto palaidējs ${{ github.ref_name }}
+          files: austra-extension-${{ github.ref_name }}.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
