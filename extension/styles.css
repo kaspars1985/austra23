@@ -330,20 +330,45 @@ body.austra-sidebar-open {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  flex: 1;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
 }
 
 .austra-log-view {
   font-size: 11px;
   color: #475569;
-  max-height: 80px;
+  flex: 1;
+  min-height: 140px;
   overflow-y: auto;
   background: #f1f5f9;
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-family: monospace;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.austra-log-view::-webkit-scrollbar {
+  width: 5px;
+}
+
+.austra-log-view::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.austra-log-view::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.austra-log-view::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Sānu paneļa kājene (Footer) */

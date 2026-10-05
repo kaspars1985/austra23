@@ -160,6 +160,9 @@ Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ār
 
 ## 📋 Versiju vēsture
 
+- **v1.2.6**
+  - Paplašināts darbību žurnāla lauks, lai tas automātiski aizpildītu visu brīvo vertikālo vietu sānu panelī, novēršot tukšo laukumu un nepieciešamību saspiestā logā ritināt tekstu.
+  - Palielināts žurnāla teksta vēstures apjoms no 300 līdz 4000 rakstzīmēm un iestrādāta glīta, viegla ritjosla.
 - **v1.2.5**
   - Brīdinājuma dialoga apstiprinājuma pogas *"Labi, sapratu"* krāsa nomainīta uz smaragdzaļo toni, saskaņojot to ar paplašinājuma sānu cilnes un galvenes vizuālo stilu.
 - **v1.2.4**

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-console.log('--- AUSTRA EXTENSION V1.2.5 VERIFICATION ---');
+console.log('--- AUSTRA EXTENSION V1.2.6 VERIFICATION ---');
 
 const extDir = path.join(__dirname, '..', 'extension');
 
@@ -14,10 +14,10 @@ if (!fs.existsSync(manifestPath)) {
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 console.log('✓ manifest.json is valid JSON');
 
-if (manifest.version !== '1.2.5') {
-  throw new Error(`manifest.json version should be 1.2.5, got ${manifest.version}`);
+if (manifest.version !== '1.2.6') {
+  throw new Error(`manifest.json version should be 1.2.6, got ${manifest.version}`);
 }
-console.log('✓ manifest.json version is 1.2.5');
+console.log('✓ manifest.json version is 1.2.6');
 
 if (manifest.action.default_popup) {
   throw new Error('default_popup should not be set (we want direct sidebar toggle via chrome.action.onClicked)!');
@@ -47,8 +47,8 @@ for (const cs of manifest.content_scripts) {
     if (!fs.existsSync(jsPath)) throw new Error(`Content script missing: ${jsFile}`);
     const code = fs.readFileSync(jsPath, 'utf8');
     new vm.Script(code); // syntax check
-    if (!code.includes("const CURRENT_VERSION = '1.2.5'")) {
-      throw new Error('content.js is missing CURRENT_VERSION = 1.2.5');
+    if (!code.includes("const CURRENT_VERSION = '1.2.6'")) {
+      throw new Error('content.js is missing CURRENT_VERSION = 1.2.6');
     }
     if (!code.includes('findModalConfirmButton') || !code.includes('waitForAndConfirmModal')) {
       throw new Error('content.js is missing modal confirmation functions!');
@@ -71,7 +71,10 @@ for (const cs of manifest.content_scripts) {
     if (!cssContent.includes('#austra-alert-btn-ok') || !cssContent.includes('#059669')) {
       throw new Error('styles.css is missing #austra-alert-btn-ok styling with tab emerald green!');
     }
-    console.log(`✓ ${cssFile} verified with layout shifting rules and green alert button`);
+    if (!cssContent.includes('.austra-log-card') || !cssContent.includes('.austra-log-view')) {
+      throw new Error('styles.css is missing log card styling!');
+    }
+    console.log(`✓ ${cssFile} verified with layout shifting rules, green alert button, and expanded log card`);
   }
 }
 

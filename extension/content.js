@@ -13,7 +13,7 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.5';
+  const CURRENT_VERSION = '1.2.6';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
 
@@ -834,7 +834,7 @@
     const logBox = document.getElementById('austra-sidebar-log');
     if (logBox) {
       const time = new Date().toLocaleTimeString('lv-LV', { hour12: false });
-      logBox.innerText = `[${time}] ${text}\n` + logBox.innerText.slice(0, 300);
+      logBox.innerText = `[${time}] ${text}\n` + logBox.innerText.slice(0, 4000);
     }
   }
 
