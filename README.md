@@ -177,11 +177,11 @@ Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ār
   - Pievienota sesijas saglabāšana (`sessionStorage`), kas novērš taimera atgriešanos uz `00:00` pēc pogas "Rezervēt materiālus" nospiešanas un lapas pārlādes.
 - **v1.2.0**
   - Ieviesta automātiska atjauninājumu pārbaude pret GitHub repozitoriju.
-  - Pielāgots kājenes formāts: `kasparsciematnieks@amf.lv © 2026`.
+  - Pielāgots autora un autortiesību kājenes formāts.
 
 ---
 
 ## 📄 Licence
 
 Izstrādāts uzņēmuma AM Furnitūra iekšējām darba ērtībām.  
-Autors: Kaspars Ciematnieks (kasparsciematnieks@amf.lv) &copy; 2026.
+Autors: Kaspars Ciematnieks &copy; 2026.
