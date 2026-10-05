@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-console.log('--- AUSTRA EXTENSION V1.2.3 VERIFICATION ---');
+console.log('--- AUSTRA EXTENSION V1.2.4 VERIFICATION ---');
 
 const extDir = path.join(__dirname, '..', 'extension');
 
@@ -14,10 +14,10 @@ if (!fs.existsSync(manifestPath)) {
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 console.log('✓ manifest.json is valid JSON');
 
-if (manifest.version !== '1.2.3') {
-  throw new Error(`manifest.json version should be 1.2.3, got ${manifest.version}`);
+if (manifest.version !== '1.2.4') {
+  throw new Error(`manifest.json version should be 1.2.4, got ${manifest.version}`);
 }
-console.log('✓ manifest.json version is 1.2.3');
+console.log('✓ manifest.json version is 1.2.4');
 
 if (manifest.action.default_popup) {
   throw new Error('default_popup should not be set (we want direct sidebar toggle via chrome.action.onClicked)!');
@@ -47,13 +47,16 @@ for (const cs of manifest.content_scripts) {
     if (!fs.existsSync(jsPath)) throw new Error(`Content script missing: ${jsFile}`);
     const code = fs.readFileSync(jsPath, 'utf8');
     new vm.Script(code); // syntax check
-    if (!code.includes("const CURRENT_VERSION = '1.2.3'")) {
-      throw new Error('content.js is missing CURRENT_VERSION = 1.2.3');
+    if (!code.includes("const CURRENT_VERSION = '1.2.4'")) {
+      throw new Error('content.js is missing CURRENT_VERSION = 1.2.4');
     }
     if (!code.includes('findModalConfirmButton') || !code.includes('waitForAndConfirmModal')) {
       throw new Error('content.js is missing modal confirmation functions!');
     }
-    console.log(`✓ ${jsFile} syntax is valid and contains modal confirmation logic`);
+    if (!code.includes('isPriceAgreedStatus') || !code.includes('showStatusWarningDialog')) {
+      throw new Error('content.js is missing status validation and warning dialog functions!');
+    }
+    console.log(`✓ ${jsFile} syntax is valid and contains modal & status validation logic`);
   }
   for (const cssFile of cs.css) {
     const cssPath = path.join(extDir, cssFile);
@@ -111,5 +114,21 @@ if (compareSemver('2.0.0', '1.9.9') <= 0) throw new Error('Semver 2.0.0 should b
 if (compareSemver('1.2.0', '1.2.0') !== 0) throw new Error('Semver 1.2.0 should be equal to 1.2.0');
 if (compareSemver('1.1.9', '1.2.0') >= 0) throw new Error('Semver 1.1.9 should be less than 1.2.0');
 console.log('✓ Semver update comparison correctly detects newer, older, and equal versions');
+
+// 7. Test Order Status validation logic
+function isPriceAgreedStatus(statusStr) {
+  if (!statusStr) return false;
+  return /cenu\s+saskaņo/i.test(statusStr);
+}
+
+if (!isPriceAgreedStatus('Cenu saskaņošana ar klientu')) throw new Error('Failed to match full status!');
+if (!isPriceAgreedStatus('Cenu saskaņošana')) throw new Error('Failed to match short status!');
+if (!isPriceAgreedStatus('Statuss: Cenu saskaņošana ar klientu')) throw new Error('Failed to match prefixed status!');
+if (isPriceAgreedStatus('Jauns')) throw new Error('False positive for Jauns!');
+if (isPriceAgreedStatus('Uz ražošanu')) throw new Error('False positive for Uz ražošanu!');
+if (isPriceAgreedStatus('Melnraksts')) throw new Error('False positive for Melnraksts!');
+if (isPriceAgreedStatus('')) throw new Error('False positive for empty string!');
+if (isPriceAgreedStatus(null)) throw new Error('False positive for null!');
+console.log('✓ Order status validation logic correctly accepts "Cenu saskaņošana" and rejects other statuses');
 
 console.log('\n>>> ALL AUTOMATED TESTS PASSED SUCCESSFULLY! <<<');

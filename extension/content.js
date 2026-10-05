@@ -13,7 +13,7 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.3';
+  const CURRENT_VERSION = '1.2.4';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
 
@@ -319,6 +319,189 @@
     };
   }
 
+  // --- ORDER STATUS DETECTION & VALIDATION ---
+  function getCurrentOrderStatus() {
+    // 1. Meklējam tabulas vai definīciju laukos ar nosaukumu "Statuss"
+    const allLabels = Array.from(document.querySelectorAll('td, th, dt, label, div, span, p')).filter(el => {
+      if (el.closest('#austra-sidebar') || el.closest('#austra-alert-overlay')) return false;
+      const t = (el.innerText || '').trim();
+      return /^statuss:?$/i.test(t);
+    });
+
+    for (const label of allLabels) {
+      // A. Tabulas rinda <tr>
+      const tr = label.closest('tr');
+      if (tr) {
+        const cells = Array.from(tr.querySelectorAll('td, th'));
+        const valCell = cells.find(c => c !== label && (c.innerText || '').trim().length > 0);
+        if (valCell) {
+          const text = (valCell.innerText || '').trim();
+          if (text) return text;
+        }
+      }
+
+      // B. Definīciju saraksts <dt> -> <dd>
+      if (label.tagName === 'DT' && label.nextElementSibling) {
+        const text = (label.nextElementSibling.innerText || '').trim();
+        if (text) return text;
+      }
+
+      // C. Konteinera bērni (flex vai grid rinda)
+      const parent = label.parentElement;
+      if (parent) {
+        const siblings = Array.from(parent.children).filter(c => c !== label && (c.innerText || '').trim().length > 0);
+        if (siblings.length > 0) {
+          const text = (siblings[0].innerText || '').trim();
+          if (text) return text;
+        }
+      }
+    }
+
+    // 2. Meklējam elementu ar tekstu "Statuss: ..."
+    const statusWithPrefix = Array.from(document.querySelectorAll('*')).find(el => {
+      if (el.children.length > 2) return false;
+      if (el.closest('#austra-sidebar') || el.closest('#austra-alert-overlay')) return false;
+      const t = (el.innerText || '').trim();
+      return /^statuss:\s*.+/i.test(t);
+    });
+    if (statusWithPrefix) {
+      const match = statusWithPrefix.innerText.trim().match(/^statuss:\s*(.+)/i);
+      if (match && match[1]) return match[1].trim();
+    }
+
+    // 3. Meklējam badge / statusa elementus
+    const badgeCandidates = Array.from(document.querySelectorAll('.badge, .label, [class*="badge" i], [class*="status" i], .status')).filter(el => {
+      if (el.closest('#austra-sidebar') || el.closest('#austra-alert-overlay')) return false;
+      return (el.innerText || '').trim().length > 0;
+    });
+
+    const priceBadge = badgeCandidates.find(b => /cenu\s+saskaņo/i.test(b.innerText || ''));
+    if (priceBadge) {
+      return priceBadge.innerText.trim();
+    }
+
+    // 4. Meklējam lapas pamattekstā
+    const bodyText = document.body ? document.body.innerText : '';
+    if (/cenu\s+saskaņošana\s+ar\s+klientu/i.test(bodyText)) {
+      return 'Cenu saskaņošana ar klientu';
+    }
+    if (/cenu\s+saskaņo/i.test(bodyText)) {
+      return 'Cenu saskaņošana';
+    }
+
+    return null;
+  }
+
+  function isPriceAgreedStatus(statusStr) {
+    const status = statusStr !== undefined ? statusStr : getCurrentOrderStatus();
+    if (!status) return false;
+    return /cenu\s+saskaņo/i.test(status);
+  }
+
+  function showStatusWarningDialog(message, currentStatus) {
+    if (document.getElementById('austra-alert-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'austra-alert-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.65);backdrop-filter:blur(2px);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;animation:austraFadeIn 0.2s ease-out;';
+
+    const box = document.createElement('div');
+    box.id = 'austra-alert-box';
+    box.style.cssText = 'background:#ffffff;border-radius:12px;width:100%;max-width:480px;box-shadow:0 20px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(239,68,68,0.2);overflow:hidden;display:flex;flex-direction:column;';
+
+    box.innerHTML = `
+      <div style="background:#fef2f2;border-bottom:1px solid #fee2e2;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:24px;line-height:1;">⚠️</span>
+          <div>
+            <h3 style="margin:0;font-size:15px;font-weight:700;color:#991b1b;">Brīdinājums par pasūtījuma statusu</h3>
+            <span style="font-size:11.5px;color:#b91c1c;">Austra ERP drošības pārbaude</span>
+          </div>
+        </div>
+        <button id="austra-alert-close-x" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:4px;">&times;</button>
+      </div>
+
+      <div style="padding:20px;font-size:13.5px;color:#334155;line-height:1.5;">
+        <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:10px;">
+          ${message}
+        </div>
+        <p style="margin:0 0 14px 0;color:#475569;">
+          Auto-rezervāciju drīkst palaist tikai tad, kad pasūtījuma cenas ir saskaņotas un statuss sistēmā ir nomainīts uz <strong>"Cenu saskaņošana ar klientu"</strong>.
+        </p>
+
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:12.5px;">
+          <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="color:#64748b;">Pašreizējais statuss:</span>
+            <span style="font-weight:700;color:#dc2626;background:#fee2e2;padding:3px 8px;border-radius:4px;border:1px solid #fca5a5;">
+              ${currentStatus || 'Nezināms'}
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="color:#64748b;">Nepieciešamais statuss:</span>
+            <span style="font-weight:700;color:#059669;background:#dcfce7;padding:3px 8px;border-radius:4px;border:1px solid #86efac;">
+              Cenu saskaņošana ar klientu
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#f8fafc;border-top:1px solid #f1f5f9;padding:12px 20px;display:flex;justify-content:flex-end;gap:10px;">
+        <button id="austra-alert-btn-ok" style="background:#dc2626;color:white;border:none;padding:8px 22px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          Labi, sapratu
+        </button>
+      </div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    const closeDialog = () => {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+    };
+
+    overlay.querySelector('#austra-alert-close-x').addEventListener('click', closeDialog);
+    overlay.querySelector('#austra-alert-btn-ok').addEventListener('click', closeDialog);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeDialog();
+    });
+
+    const escListener = (e) => {
+      if (e.key === 'Escape') {
+        closeDialog();
+        document.removeEventListener('keydown', escListener);
+      }
+    };
+    document.addEventListener('keydown', escListener);
+  }
+
+  function updateOrderStatusDisplay() {
+    const el = document.getElementById('austra-display-status');
+    if (!el) return;
+    const currentStatus = getCurrentOrderStatus();
+    if (!currentStatus) {
+      el.innerText = 'Nav atrasts';
+      el.style.color = '#94a3b8';
+      el.style.background = '#f1f5f9';
+      el.style.border = '1px solid #e2e8f0';
+      return;
+    }
+    const isAgreed = isPriceAgreedStatus(currentStatus);
+    el.innerText = currentStatus;
+    if (isAgreed) {
+      el.style.color = '#059669';
+      el.style.background = '#dcfce7';
+      el.style.border = '1px solid #86efac';
+      el.title = 'Statuss ir pareizs, auto-rezervāciju drīkst palaist';
+    } else {
+      el.style.color = '#b45309';
+      el.style.background = '#fef3c7';
+      el.style.border = '1px solid #fde68a';
+      el.title = 'Pirms Sākt auto-rezervāciju, saskaņo cenas ar klientu!';
+    }
+  }
+
   function dispatchClick(el) {
     if (!el) return;
     try {
@@ -549,8 +732,16 @@
 
       <div class="austra-sidebar-body">
         <div class="austra-order-card">
-          <div class="austra-order-label">Aktīvais pasūtījums</div>
-          <div class="austra-order-code" id="austra-display-order">${orderCode}</div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div>
+              <div class="austra-order-label">Aktīvais pasūtījums</div>
+              <div class="austra-order-code" id="austra-display-order">${orderCode}</div>
+            </div>
+            <div style="text-align: right;">
+              <div class="austra-order-label">Statuss</div>
+              <div class="austra-order-status-badge" id="austra-display-status">Pārbauda...</div>
+            </div>
+          </div>
         </div>
 
         <button class="austra-btn-action-main btn-start" id="austra-sidebar-action-btn">
@@ -662,6 +853,8 @@
     updateBadge('austra-sidebar-dot-bom', res.states.bom);
     updateBadge('austra-sidebar-dot-assembly', res.states.assembly);
 
+    updateOrderStatusDisplay();
+
     return res;
   }
 
@@ -690,6 +883,28 @@
   }
 
   async function startAutomation() {
+    // 1. Drošības pārbaude: statuss "Cenu saskaņošana ar klientu"
+    const currentStatus = getCurrentOrderStatus();
+    if (!isPriceAgreedStatus(currentStatus)) {
+      const displayStatus = currentStatus || 'Nav "Cenu saskaņošana ar klientu"';
+      const warningMsg = 'Pirms Sākt auto-rezervāciju, saskaņo cenas ar klientu!';
+
+      logActivity(`⚠️ ${warningMsg}`);
+      if (currentStatus) {
+        logActivity(`(Pašreizējais statuss: "${currentStatus}")`);
+      }
+      playSound('error');
+      sendNotification('Austra ERP: Brīdinājums', warningMsg);
+
+      const statusMsg = document.getElementById('austra-sidebar-status-msg');
+      const statusIcon = document.getElementById('austra-sidebar-status-icon');
+      if (statusMsg) statusMsg.innerText = 'Jāsaskaņo cenas ar klientu!';
+      if (statusIcon) statusIcon.innerText = '⚠️';
+
+      showStatusWarningDialog(warningMsg, displayStatus);
+      return;
+    }
+
     logActivity('Auto-rezervācijas process uzsākts!');
     const currentCode = getOrderCode();
     try {

@@ -189,6 +189,9 @@
     </p>
     <button class="btn" style="background: white; border-color: #d1d5db;" onclick="resetMockState()">Atiestatīt punktus uz tukšiem</button>
     <button class="btn" style="background: #22c55e; color: white;" onclick="makeAllGreen()">Uzreiz padarīt visus 3 zaļus</button>
+    <span style="margin: 0 8px; color: #cbd5e1;">|</span>
+    <button class="btn" style="background: #059669; color: white;" onclick="setMockStatus('Cenu saskaņošana ar klientu')">Uzlikt statusu: "Cenu saskaņošana ar klientu"</button>
+    <button class="btn" style="background: #fee2e2; color: #991b1b; border-color: #fca5a5;" onclick="setMockStatus('Jauns')">Uzlikt statusu: "Jauns" (Bloķēts)</button>
   </div>
 
   <!-- Modālais logs "Uz ražošanu" (tieši tāds kā Austra ERP sistēmā) -->
@@ -293,6 +296,17 @@
       dotCutrite.className = 'sc-kfPsKX jfxJkt';
       dotBom.className = 'sc-kfPsKX jfxJkt';
       dotAssembly.className = 'sc-kfPsKX jfxJkt';
+    }
+
+    function setMockStatus(statusName) {
+      if (currentOrderStatus) {
+        currentOrderStatus.innerText = 'Statuss: ' + statusName;
+        if (statusName.includes('Cenu saskaņošana')) {
+          currentOrderStatus.className = 'status-badge in-prod';
+        } else {
+          currentOrderStatus.className = 'status-badge';
+        }
+      }
     }
   </script>
 </body>

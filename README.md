@@ -160,6 +160,9 @@ Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ār
 
 ## 📋 Versiju vēsture
 
+- **v1.2.4**
+  - Ieviesta pasūtījuma statusa drošības pārbaude pirms auto-rezervācijas palaišanas: ja statuss nav nomainīts uz *"Cenu saskaņošana ar klientu"*, process tiek bloķēts un tiek parādīts brīdinošs kļūdas logs.
+  - Sānu paneļa pasūtījuma kartē pievienots reāllaika pasūtījuma statusa rādītājs.
 - **v1.2.3**
   - Ieviests jaunais Austras koka identitātes logo un panelis pārdēvēts par *Austra LPAxxx auto palaidējs*.
   - Automātiski atrod un nospiež apstiprinājuma pogu modālajā logā *"Uz ražošanu"*.
