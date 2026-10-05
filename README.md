@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="assets/austra_logo.png" width="130" alt="Austra ERP Logo" />
+  <img src="assets/austra_logo.png" width="130" alt="Austra ERP logo" />
 </p>
 
-# ⚡ Austra ERP - Auto-Rezervācija & Nodošana Ražošanā
+# ⚡ Austra ERP – auto-rezervācija un nodošana ražošanā
 
-> **Pārlūka paplašinājums (Microsoft Edge & Google Chrome, Manifest V3)**, kas automatizē AM Furnitūra ERP sistēmas (*Austra*) pasūtījumu apstrādes rutīnu: materiālu rezervēšanu, reāllaika indikatoru uzraudzību un automātisku statusa nomaiņu uz **"Uz ražošanu"**.
+> **Pārlūka paplašinājums (Microsoft Edge un Google Chrome, Manifest V3)**, kas automatizē AM Furnitūra ERP sistēmas (*Austra*) pasūtījumu apstrādes rutīnu: materiālu rezervēšanu, reāllaika indikatoru uzraudzību un automātisku statusa nomaiņu uz **"Uz ražošanu"**.
 
 ---
 
-## 🎯 Problēma un Risinājums
+## 🎯 Problēma un risinājums
 
 Strādājot ar pasūtījumiem sistēmā `https://austra.amfurnitura.lv/order_management/orders/*`, pirms pasūtījuma nodošanas ražošanā ir nepieciešams rezervēt materiālus. Šis process bieži aizņem ilgāku laiku, tādēļ lietotājam nākas regulāri atgriezties pie pasūtījuma, pārbaudīt, vai materiāli ir veiksmīgi rezervējušies, vai arī pastāv risks aizmirst pasūtījumu un savlaicīgi nenodot to ražošanā.
 
@@ -19,43 +19,43 @@ Strādājot ar pasūtījumiem sistēmā `https://austra.amfurnitura.lv/order_man
    - 📋 **BOM izveidoti**
    - 🔨 **Montāžas pasūtījums izveidots**
 3. Brīdī, kad visi 3 punkti kļūst zaļi, paplašinājums **pats automātiski izvēlas "Uz ražošanu" un apstiprina uznirstošo logu (modālo dialogu)**.
-4. Ielogo katru darbību sānu paneļa **Darbību žurnālā**.
+4. Ielogo katru darbību sānu paneļa darbību žurnālā.
 5. Atskaņo patīkamu skaņas melodiju un nosūta darbvirsmas paziņojumu.
 
 ---
 
-## ✨ Galvenās Iespējas
+## ✨ Galvenās iespējas
 
-- **Integrēts labās puses sānu panelis (Docked Sidebar):**
-  - Panelis neaizsedz lapas saturu! Atverot paneli (320px platumā), viss Austra ERP saturs (teksti, tabulas, pogas) automātiski nobīdās pa kreisi.
+- **Integrēts labās puses sānu panelis:**
+  - Panelis neaizsedz lapas saturu. Atverot paneli (320px platumā), viss Austra ERP saturs (teksti, tabulas, pogas) automātiski nobīdās pa kreisi.
   - Ekrāna labajā malā atrodas eleganta cilne (`LPAxxx palaidējs ◀`), ar kuru paneli var jebkurā brīdī sakļaut vai atvērt.
 - **Viena klikšķa palaišana:**
   - Viena liela, skaidra poga **"🚀 Sākt auto-rezervāciju"**.
-- **Neatkarīgs daudzcilņu atbalsts (Multi-tab):**
-  - Var paralēli atvērt 5, 10 vai vairāk pasūtījumu cilnes un katrā palaist procesu – katrs tabs darbojas 100% autonomi un droši.
+- **Neatkarīgs daudzcilņu atbalsts:**
+  - Var paralēli atvērt 5, 10 vai vairāk pasūtījumu cilnes un katrā palaist procesu – katra cilne darbojas 100% autonomi un droši.
   - Uzklikšķinot uz pabeigšanas paziņojuma Windows paziņojumu centrā, pārlūks uzreiz pārslēdz lietotāju tieši uz to cilni, kurā pasūtījums pabeigts.
 - **Reāllaika hronometrs un drošības taimauts:**
   - Rāda, cik sekundes vai minūtes konkrētais pasūtījums jau rezervējas.
   - Iebūvēts 15 minūšu drošības taimauts, kas brīdina ar skaņas signālu, ja servera process ir iestrēdzis.
-- **Stāvokļa nepārtrauktība (Session Persistence pāri pārlādēm):**
-  - Kad tiek nospiests "Rezervēt materiālus" un lapa pārlādējas, addons atceras sākuma laiku un statusu (`sessionStorage`). Pēc pārlādes taimeris neapstājas uz 00:00 un uzraudzība uzreiz turpinās.
-- **Audio signāli (Web Audio API):**
-  - Nav atkarības no ārējiem MP3 failiem vai interneta bibliotēkām – skaņa tiek ģenerēta tieši pārlūka dzinējā.
+- **Stāvokļa nepārtrauktība (sesijas saglabāšana pāri lapas pārlādēm):**
+  - Kad tiek nospiests "Rezervēt materiālus" un lapa pārlādējas, paplašinājums atceras sākuma laiku un statusu (`sessionStorage`). Pēc pārlādes taimeris neapstājas uz 00:00 un uzraudzība uzreiz turpinās.
+- **Audio signāli:**
+  - Nav atkarības no ārējiem MP3 failiem vai interneta bibliotēkām – skaņa tiek ģenerēta tieši pārlūka dzinējā (Web Audio API).
   - Var ieslēgt vai izslēgt ar vienu klikšķi.
-- **Automātiska atjauninājumu pārbaude (Self-Update Checker):**
+- **Automātiska atjauninājumu pārbaude:**
   - Paplašinājums pats fonā pārbauda GitHub repozitoriju (`github.com/kaspars1985/austra23`).
   - Ja ir izlaista jaunāka versija, sānu panelī uzreiz parādās pamanāma paziņojuma josla ar pogu *"Atvērt GitHub un atjaunināt ↗"*.
   - Sānu paneļa kājenē ir redzama pašreizējā versija un poga *"Pārbaudīt atjauninājumu"* tūlītējai manuālai pārbaudei.
 - **Pārlūka rīkjoslas integrācija:**
-  - Klikšķis uz paplašinājuma ikonas Edge/Chrome rīkjoslā tieši atver vai aizver sānu paneli aktīvajā cilnē.
+  - Klikšķis uz paplašinājuma ikonas Microsoft Edge vai Google Chrome rīkjoslā tieši atver vai aizver sānu paneli aktīvajā cilnē.
 
 ---
 
 ## 🖥️ Kā izskatās saskarne
 
-```
+```text
 +-------------------------------------------------------------+-----------------------+
-|  Austra ERP Pasūtījums (100% brīvs, nekas netiek aizsegts)  | Austra LPAxxx auto    |
+|  Austra ERP pasūtījums (100% brīvs, nekas netiek aizsegts)  | Austra LPAxxx auto    |
 |                                                             | palaidējs [Sakļaut ▶] |
 |  Pasūtījumi / LPA123456 (KLIENTS SIA)                      |-----------------------|
 |  [Rezervēt materiālus]  [Mainīt statusu ▾]                  | 🚀 Sākt auto-         |
@@ -74,7 +74,7 @@ Strādājot ar pasūtījumiem sistēmā `https://austra.amfurnitura.lv/order_man
 
 ---
 
-## 🚀 Uzstādīšana un Palaišana
+## 🚀 Uzstādīšana un palaišana
 
 Paplašinājums ir izstrādāts pēc modernā **Manifest V3** standarta un ir savietojams ar **Microsoft Edge**, **Google Chrome**, **Brave** un citiem Chromium bāzētiem pārlūkiem.
 
@@ -94,7 +94,7 @@ Paplašinājums ir izstrādāts pēc modernā **Manifest V3** standarta un ir sa
 
 ---
 
-## 📖 Lietošanas Pamācība
+## 📖 Lietošanas pamācība
 
 1. Atveriet jebkuru pasūtījumu vietnē `https://austra.amfurnitura.lv/order_management/orders/...`.
 2. Ekrāna labajā pusē automātiski atvērsies sānu panelis (ja atvērāt lapu pirms paplašinājuma ielādes, vienreiz pārlādējiet lapu ar `F5`).
@@ -103,18 +103,20 @@ Paplašinājums ir izstrādāts pēc modernā **Manifest V3** standarta un ir sa
    - Statusa lodziņš sāks skaitīt laiku.
    - Indikatoru aplīši rādīs katra soļa izpildi.
 4. Tiklīdz visi 3 punkti kļūs zaļi:
-   - Statuss automātiski tiks nomainīts uz **"Uz ražošanu"**.
-   - Atskanēs apstiprinājuma skaņa un parādīsies paziņojums.
+   - Statuss automātiski tiek nomainīts uz **"Uz ražošanu"** un tiek apstiprināts modālais logs.
+   - Darbību žurnālā tiek reģistrēts katrs izpildītais solis.
+   - Atskan apstiprinājuma skaņa un parādās darbvirsmas paziņojums.
 
 ---
 
-## 📁 Projekta Struktūra
+## 📁 Projekta struktūra
 
 ```text
 AUSTRA/
 ├── .gitignore                # Git ignorētie faili
 ├── README.md                 # Dokumentācija latviešu valodā
 ├── generate_icons.py         # Skripts ikonu ģenerēšanai
+├── assets/                   # Projekta vizuālie materiāli un logo
 ├── extension/                # Paplašinājuma galvenā mape (jāielādē pārlūkā)
 │   ├── manifest.json         # Manifest V3 konfigurācija
 │   ├── content.js            # Lapas DOM loģika, novērošana un automatizācija
@@ -128,7 +130,7 @@ AUSTRA/
 
 ---
 
-## 🧪 Testēšana un Verifikācija
+## 🧪 Testēšana un verifikācija
 
 Lai pārbaudītu koda pareizību pirms publicēšanas:
 
@@ -139,36 +141,37 @@ node test/test_extension.js
 
 Lai izmēģinātu paplašinājuma darbību drošā testa vidē:
 - Atveriet pārlūkā failu `test/mock_austra_page.html`.
-- Šī lapa precīzi atveido Austra ERP pogas, stilus un 3 indikatorus.
+- Šī lapa precīzi atveido Austra ERP pogas, stilus, indikatorus un apstiprinājuma logu.
 
 ---
 
-## ❓ Biežāk Uzdotie Jautājumi (FAQ)
+## ❓ Biežāk uzdotie jautājumi (BUJ)
 
 #### Vai paplašinājums ietekmē citus pasūtījumus?
 Nē. Katra cilne darbojas pilnīgi neatkarīgi. Ja vienā cilnē palaižat rezervāciju, citās cilnēs nekas netiek aiztikts, kamēr paši to nepalaižat.
 
 #### Ko nozīmē "Gatavs darbam ar 00:00"?
-Tas ir sākuma stāvoklis – addons ir veiksmīgi pieslēdzies pasūtījumam un gaida, kad nospiedīsiet zaļo pogu "🚀 Sākt auto-rezervāciju".
+Tas ir sākuma stāvoklis – paplašinājums ir veiksmīgi pieslēdzies pasūtījumam un gaida, kad nospiedīsiet zaļo pogu "🚀 Sākt auto-rezervāciju".
 
 #### Vai paplašinājums sūta datus uz ārējiem serveriem?
 Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ārējus serverus vai trešo pušu analītiku.
 
 ---
 
-## 📋 Versiju Vēsture (Changelog)
+## 📋 Versiju vēsture
 
 - **v1.2.3**
+  - Ieviests jaunais Austras koka identitātes logo un panelis pārdēvēts par *Austra LPAxxx auto palaidējs*.
   - Automātiski atrod un nospiež apstiprinājuma pogu modālajā logā *"Uz ražošanu"*.
-  - Detalizēts apstiprināšanas procesa ieraksts sānu paneļa *Darbību žurnālā*.
-  - Droša pabeigtības stāvokļa saglabāšana pat gadījumā, ja modāļa apstiprināšana izraisa tūlītēju lapas pārlādi.
+  - Detalizēts apstiprināšanas procesa ieraksts sānu paneļa darbību žurnālā.
+  - Droša pabeigtības stāvokļa saglabāšana pat tad, ja modāļa apstiprināšana izraisa tūlītēju lapas pārlādi.
 - **v1.2.2**
-  - Aizstāts lapas `MutationObserver` ar vienmērīgu 1s ciklu, novēršot pārlūka cilnes uzkāršanos.
+  - Aizstāts lapas `MutationObserver` ar vienmērīgu 1 sekundes ciklu, novēršot pārlūka cilnes uzkāršanos.
   - Paaugstināta indikatoru meklēšanas precizitāte, izslēdzot blakus esošo tabulu rindu kļūdainu nolasīšanu.
 - **v1.2.1**
-  - Pievienota sesijas saglabāšana (`sessionStorage`), kas novērš taimera atgriešanos uz `00:00` pēc "Rezervēt materiālus" nospiešanas un lapas pārlādes.
+  - Pievienota sesijas saglabāšana (`sessionStorage`), kas novērš taimera atgriešanos uz `00:00` pēc pogas "Rezervēt materiālus" nospiešanas un lapas pārlādes.
 - **v1.2.0**
-  - Ieviesta automātiskā atjauninājumu pārbaude pret GitHub repozitoriju.
+  - Ieviesta automātiska atjauninājumu pārbaude pret GitHub repozitoriju.
   - Pielāgots kājenes formāts: `kasparsciematnieks@amf.lv © 2026`.
 
 ---
