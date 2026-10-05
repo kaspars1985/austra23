@@ -160,6 +160,8 @@ Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ār
 
 ## 📋 Versiju vēsture
 
+- **v1.2.5**
+  - Brīdinājuma dialoga apstiprinājuma pogas *"Labi, sapratu"* krāsa nomainīta uz smaragdzaļo toni, saskaņojot to ar paplašinājuma sānu cilnes un galvenes vizuālo stilu.
 - **v1.2.4**
   - Ieviesta pasūtījuma statusa drošības pārbaude pirms auto-rezervācijas palaišanas: ja statuss nav nomainīts uz *"Cenu saskaņošana ar klientu"*, process tiek bloķēts un tiek parādīts brīdinošs kļūdas logs.
   - Sānu paneļa pasūtījuma kartē pievienots reāllaika pasūtījuma statusa rādītājs.

@@ -13,7 +13,7 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.4';
+  const CURRENT_VERSION = '1.2.5';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
 
@@ -446,7 +446,7 @@
       </div>
 
       <div style="background:#f8fafc;border-top:1px solid #f1f5f9;padding:12px 20px;display:flex;justify-content:flex-end;gap:10px;">
-        <button id="austra-alert-btn-ok" style="background:#dc2626;color:white;border:none;padding:8px 22px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+        <button id="austra-alert-btn-ok" style="background:linear-gradient(135deg, #059669 0%, #10b981 100%);color:#ffffff;border:none;padding:8px 24px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 6px rgba(5,150,105,0.28);transition:all 0.2s ease;">
           Labi, sapratu
         </button>
       </div>
