@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/austra_logo.png" width="130" alt="Austra ERP Logo" />
+</p>
+
 # ⚡ Austra ERP - Auto-Rezervācija & Nodošana Ražošanā
 
 > **Pārlūka paplašinājums (Microsoft Edge & Google Chrome, Manifest V3)**, kas automatizē AM Furnitūra ERP sistēmas (*Austra*) pasūtījumu apstrādes rutīnu: materiālu rezervēšanu, reāllaika indikatoru uzraudzību un automātisku statusa nomaiņu uz **"Uz ražošanu"**.

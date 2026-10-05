@@ -514,11 +514,15 @@
   function createSidebarUI() {
     if (document.getElementById('austra-sidebar')) return;
 
+    const logoUrl = (chrome && chrome.runtime && chrome.runtime.getURL)
+      ? chrome.runtime.getURL('icons/icon48.png')
+      : 'icons/icon48.png';
+
     // 1. Labās malas cilne (Pull-Tab)
     pullTabEl = document.createElement('div');
     pullTabEl.id = 'austra-sidebar-tab';
     pullTabEl.className = 'hidden'; // sākotnēji paslēpta, jo panelis atvērsies uzreiz
-    pullTabEl.innerHTML = `<span>⚡</span><span>Auto-Ražošana ◀</span>`;
+    pullTabEl.innerHTML = `<img src="${logoUrl}" class="austra-tab-logo-img" alt="Logo" /><span>Auto-Ražošana ◀</span>`;
     pullTabEl.title = 'Atvērt Austra Auto-Ražošanas sānu paneli';
     pullTabEl.addEventListener('click', openSidebar);
     document.body.appendChild(pullTabEl);
@@ -533,7 +537,8 @@
     sidebarEl.innerHTML = `
       <div class="austra-sidebar-header">
         <div class="austra-sidebar-title">
-          <span>⚡</span> Austra Auto-Ražošana
+          <img src="${logoUrl}" class="austra-header-logo-img" alt="Austra" />
+          <span>Austra Auto-Ražošana</span>
         </div>
         <div class="austra-sidebar-header-btns">
           <button class="austra-header-btn" id="austra-btn-collapse" title="Sakļaut paneli un atjaunot pilnu lapas platumu">
