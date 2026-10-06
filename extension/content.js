@@ -13,7 +13,7 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.6';
+  const CURRENT_VERSION = '1.2.7';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
 
@@ -380,6 +380,11 @@
       return priceBadge.innerText.trim();
     }
 
+    const drawingBadge = badgeCandidates.find(b => /ras[eē]jum/i.test(b.innerText || ''));
+    if (drawingBadge) {
+      return drawingBadge.innerText.trim();
+    }
+
     // 4. Meklējam lapas pamattekstā
     const bodyText = document.body ? document.body.innerText : '';
     if (/cenu\s+saskaņošana\s+ar\s+klientu/i.test(bodyText)) {
@@ -387,6 +392,12 @@
     }
     if (/cenu\s+saskaņo/i.test(bodyText)) {
       return 'Cenu saskaņošana';
+    }
+    if (/ras[eē]jumu\s+saskaņošana\s+ar\s+klientu/i.test(bodyText)) {
+      return 'Rasējumu saskaņošana ar klientu';
+    }
+    if (/ras[eē]jumu\s+saskaņo/i.test(bodyText)) {
+      return 'Rasējumu saskaņošana';
     }
 
     return null;
@@ -396,6 +407,19 @@
     const status = statusStr !== undefined ? statusStr : getCurrentOrderStatus();
     if (!status) return false;
     return /cenu\s+saskaņo/i.test(status);
+  }
+
+  function isDrawingStatus(statusStr) {
+    const status = statusStr !== undefined ? statusStr : getCurrentOrderStatus();
+    if (!status) return false;
+    return /ras[eē]jum/i.test(status);
+  }
+
+  function resetSidebarStatusMsg() {
+    const statusMsg = document.getElementById('austra-sidebar-status-msg');
+    const statusIcon = document.getElementById('austra-sidebar-status-icon');
+    if (statusMsg) statusMsg.innerText = 'Gatavs darbam';
+    if (statusIcon) statusIcon.innerText = '⚪';
   }
 
   function showStatusWarningDialog(message, currentStatus) {
@@ -459,6 +483,7 @@
       if (overlay.parentNode) {
         overlay.parentNode.removeChild(overlay);
       }
+      resetSidebarStatusMsg();
     };
 
     overlay.querySelector('#austra-alert-close-x').addEventListener('click', closeDialog);
@@ -476,6 +501,101 @@
     document.addEventListener('keydown', escListener);
   }
 
+  function showDrawingConfirmationDialog(currentStatus, onConfirm) {
+    if (document.getElementById('austra-alert-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'austra-alert-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.65);backdrop-filter:blur(2px);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;animation:austraFadeIn 0.2s ease-out;';
+
+    const box = document.createElement('div');
+    box.id = 'austra-alert-box';
+    box.style.cssText = 'background:#ffffff;border-radius:12px;width:100%;max-width:500px;box-shadow:0 20px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(37,99,235,0.2);overflow:hidden;display:flex;flex-direction:column;';
+
+    box.innerHTML = `
+      <div style="background:#eff6ff;border-bottom:1px solid #dbeafe;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:24px;line-height:1;">📐</span>
+          <div>
+            <h3 style="margin:0;font-size:15px;font-weight:700;color:#1e40af;">Pasūtījums ar rasējumiem</h3>
+            <span style="font-size:11.5px;color:#3b82f6;">Austra ERP rasējumu apstiprinājums</span>
+          </div>
+        </div>
+        <button id="austra-alert-close-x" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:4px;">&times;</button>
+      </div>
+
+      <div style="padding:20px;font-size:13.5px;color:#334155;line-height:1.5;">
+        <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:8px;">
+          Vai klients ir apstiprinājis rasējumus?
+        </div>
+        <p style="margin:0 0 14px 0;color:#475569;">
+          Šim pasūtījumam pašreizējais statuss ir <strong>"${currentStatus}"</strong>.<br>
+          Ja klients rasējumus jau ir saskaņojis un pasūtījums jānodod ražošanā, apstipriniet, lai sāktu auto-rezervāciju kā izņēmumu.
+        </p>
+
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:12.5px;">
+          <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="color:#64748b;">Pašreizējais statuss:</span>
+            <span style="font-weight:700;color:#1d4ed8;background:#dbeafe;padding:3px 8px;border-radius:4px;border:1px solid #bfdbfe;">
+              ${currentStatus}
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="color:#64748b;">Nepieciešamais nosacījums:</span>
+            <span style="font-weight:700;color:#059669;background:#dcfce7;padding:3px 8px;border-radius:4px;border:1px solid #86efac;">
+              Rasējumi saskaņoti ar klientu
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#f8fafc;border-top:1px solid #f1f5f9;padding:12px 20px;display:flex;justify-content:flex-end;gap:10px;">
+        <button id="austra-alert-btn-cancel">
+          Atcelt
+        </button>
+        <button id="austra-alert-btn-confirm">
+          Rasējumi saskaņoti – Turpināt 🚀
+        </button>
+      </div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    const closeDialog = () => {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+    };
+
+    const handleCancel = () => {
+      closeDialog();
+      resetSidebarStatusMsg();
+      logActivity('Auto-rezervācija atcelta (gaida rasējumu saskaņošanu).');
+    };
+
+    overlay.querySelector('#austra-alert-close-x').addEventListener('click', handleCancel);
+    overlay.querySelector('#austra-alert-btn-cancel').addEventListener('click', handleCancel);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) handleCancel();
+    });
+
+    const escListener = (e) => {
+      if (e.key === 'Escape') {
+        handleCancel();
+        document.removeEventListener('keydown', escListener);
+      }
+    };
+    document.addEventListener('keydown', escListener);
+
+    overlay.querySelector('#austra-alert-btn-confirm').addEventListener('click', () => {
+      closeDialog();
+      if (typeof onConfirm === 'function') {
+        onConfirm();
+      }
+    });
+  }
+
   function updateOrderStatusDisplay() {
     const el = document.getElementById('austra-display-status');
     if (!el) return;
@@ -488,12 +608,18 @@
       return;
     }
     const isAgreed = isPriceAgreedStatus(currentStatus);
+    const isDrawing = isDrawingStatus(currentStatus);
     el.innerText = currentStatus;
     if (isAgreed) {
       el.style.color = '#059669';
       el.style.background = '#dcfce7';
       el.style.border = '1px solid #86efac';
       el.title = 'Statuss ir pareizs, auto-rezervāciju drīkst palaist';
+    } else if (isDrawing) {
+      el.style.color = '#1d4ed8';
+      el.style.background = '#eff6ff';
+      el.style.border = '1px solid #bfdbfe';
+      el.title = 'Pasūtījums ar rasējumiem. Var palaist, ja klients ir apstiprinājis rasējumus.';
     } else {
       el.style.color = '#b45309';
       el.style.background = '#fef3c7';
@@ -882,30 +1008,12 @@
     }
   }
 
-  async function startAutomation() {
-    // 1. Drošības pārbaude: statuss "Cenu saskaņošana ar klientu"
-    const currentStatus = getCurrentOrderStatus();
-    if (!isPriceAgreedStatus(currentStatus)) {
-      const displayStatus = currentStatus || 'Nav "Cenu saskaņošana ar klientu"';
-      const warningMsg = 'Pirms Sākt auto-rezervāciju, saskaņo cenas ar klientu!';
-
-      logActivity(`⚠️ ${warningMsg}`);
-      if (currentStatus) {
-        logActivity(`(Pašreizējais statuss: "${currentStatus}")`);
-      }
-      playSound('error');
-      sendNotification('Austra ERP: Brīdinājums', warningMsg);
-
-      const statusMsg = document.getElementById('austra-sidebar-status-msg');
-      const statusIcon = document.getElementById('austra-sidebar-status-icon');
-      if (statusMsg) statusMsg.innerText = 'Jāsaskaņo cenas ar klientu!';
-      if (statusIcon) statusIcon.innerText = '⚠️';
-
-      showStatusWarningDialog(warningMsg, displayStatus);
-      return;
+  async function executeAutomation(isException = false) {
+    if (isException) {
+      logActivity('⚠️ Izņēmums: Rasējumi saskaņoti ar klientu. Uzsākta auto-rezervācija!');
+    } else {
+      logActivity('Auto-rezervācijas process uzsākts!');
     }
-
-    logActivity('Auto-rezervācijas process uzsākts!');
     const currentCode = getOrderCode();
     try {
       sessionStorage.removeItem(`austra_completed_${currentCode}`);
@@ -938,6 +1046,44 @@
     } else {
       logActivity('Poga "Rezervēt materiālus" netika atrasta (iespējams, jau nospiesta). Turpinu novērošanu.');
     }
+  }
+
+  async function startAutomation() {
+    // 1. Drošības pārbaude: statuss "Cenu saskaņošana ar klientu" vai izņēmums rasējumiem
+    const currentStatus = getCurrentOrderStatus();
+
+    // A. Parastais atļautais ceļš: statuss "Cenu saskaņošana ar klientu"
+    if (isPriceAgreedStatus(currentStatus)) {
+      await executeAutomation(false);
+      return;
+    }
+
+    // B. Izņēmums pasūtījumiem ar rasējumiem: piedāvā apstiprināt un palaist procesu
+    if (isDrawingStatus(currentStatus)) {
+      const displayStatus = currentStatus || 'Rasējumu saskaņošana ar klientu';
+      showDrawingConfirmationDialog(displayStatus, async () => {
+        await executeAutomation(true);
+      });
+      return;
+    }
+
+    // C. Cits neatļauts statuss (bloķēts)
+    const displayStatus = currentStatus || 'Nav "Cenu saskaņošana ar klientu"';
+    const warningMsg = 'Pirms Sākt auto-rezervāciju, saskaņo cenas ar klientu!';
+
+    logActivity(`⚠️ ${warningMsg}`);
+    if (currentStatus) {
+      logActivity(`(Pašreizējais statuss: "${currentStatus}")`);
+    }
+    playSound('error');
+    sendNotification('Austra ERP: Brīdinājums', warningMsg);
+
+    const statusMsg = document.getElementById('austra-sidebar-status-msg');
+    const statusIcon = document.getElementById('austra-sidebar-status-icon');
+    if (statusMsg) statusMsg.innerText = 'Jāsaskaņo cenas ar klientu!';
+    if (statusIcon) statusIcon.innerText = '⚠️';
+
+    showStatusWarningDialog(warningMsg, displayStatus);
   }
 
   function startMonitoring() {

@@ -488,12 +488,12 @@ body.austra-sidebar-open {
   color: #0369a1;
 }
 
-/* Brīdinājuma dialoga apstiprinājuma poga (tāda pati zaļā krāsa kā sānu tabā) */
-#austra-alert-btn-ok {
+#austra-alert-btn-ok,
+#austra-alert-btn-confirm {
   background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
   color: #ffffff !important;
   border: none !important;
-  padding: 8px 24px !important;
+  padding: 8px 22px !important;
   border-radius: 6px !important;
   font-size: 13px !important;
   font-weight: 600 !important;
@@ -502,12 +502,37 @@ body.austra-sidebar-open {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-#austra-alert-btn-ok:hover {
+#austra-alert-btn-ok:hover,
+#austra-alert-btn-confirm:hover {
   background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4) !important;
   transform: translateY(-1px);
 }
 
-#austra-alert-btn-ok:active {
+#austra-alert-btn-ok:active,
+#austra-alert-btn-confirm:active {
   transform: translateY(0);
 }
+
+#austra-alert-btn-cancel {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+  padding: 8px 18px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#austra-alert-btn-cancel:hover {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #94a3b8 !important;
+}
+
+#austra-alert-btn-cancel:active {
+  transform: translateY(0);
+}
+
