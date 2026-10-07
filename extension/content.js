@@ -13,7 +13,7 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.8';
+  const CURRENT_VERSION = '1.2.9';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
 
@@ -97,6 +97,37 @@
       const key = getLogSessionKey();
       sessionStorage.removeItem(key);
     } catch (e) {}
+  }
+
+  function formatTimestamp(timestamp) {
+    const d = new Date(timestamp);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
+  function getOrderCompletedTimestamp() {
+    const orderCode = getOrderCode();
+    try {
+      const raw = sessionStorage.getItem(`austra_completed_${orderCode}`);
+      if (raw) {
+        const num = parseInt(raw, 10);
+        if (!isNaN(num)) return num;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function getInitialLogContent() {
+    const existing = loadLogFromSession();
+    if (existing && existing.trim().length > 0) {
+      return existing;
+    }
+    const completedTs = getOrderCompletedTimestamp();
+    if (completedTs) {
+      return `ℹ️ Šis pasūtījums jau ir palaists ražoties plkst. ${formatTimestamp(completedTs)}`;
+    }
+    return 'Gaidu palaišanu...';
   }
 
   // --- VERSION CHECKER & COMPARISON ---
@@ -870,11 +901,14 @@
 
     // Saglabājam pabeigšanas marķieri TIKAI tad, ja modālis ir veiksmīgi apstiprināts bez kļūdām
     const orderCode = getOrderCode();
+    const now = Date.now();
     try {
-      sessionStorage.setItem(`austra_completed_${orderCode}`, String(Date.now()));
+      sessionStorage.setItem(`austra_completed_${orderCode}`, String(now));
     } catch (e) {}
 
+    const timeStr = formatTimestamp(now);
     logActivity('Statuss nomainīts uz "Uz ražošanu"!');
+    logActivity(`✅ Pasūtījums veiksmīgi palaists ražoties plkst. ${timeStr}`);
   }
 
   function getOrderCode() {
@@ -995,7 +1029,7 @@
             <span>Darbību žurnāls</span>
             <button id="austra-btn-clear-log" class="austra-btn-clear-log" type="button" title="Notīrīt šī pasūtījuma žurnālu">Notīrīt</button>
           </div>
-          <div class="austra-log-view" id="austra-sidebar-log">${loadLogFromSession() || 'Gaidu palaišanu...'}</div>
+          <div class="austra-log-view" id="austra-sidebar-log">${getInitialLogContent()}</div>
         </div>
       </div>
 

@@ -160,6 +160,9 @@ Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ār
 
 ## 📋 Versiju vēsture
 
+- **v1.2.9**
+  - **Pabeigšanas laika zīmogs darbību žurnālā**: Pēc veiksmīgas statusa maiņas uz "Uz ražošanu" darbību žurnālā tiek fiksēts skaidrs un pamanāms ieraksts ar precīzu laiku: `✅ Pasūtījums veiksmīgi palaists ražoties plkst. HH:MM`.
+  - **Iepriekš palaistu pasūtījumu atpazīšana**: Ja lietotājs atver vai pārlādē pasūtījumu, kas šajā sesijā jau veiksmīgi palaists ražošanā, darbību žurnālā uzreiz tiek parādīts informatīvs paziņojums: `ℹ️ Šis pasūtījums jau ir palaists ražoties plkst. HH:MM`.
 - **v1.2.8**
   - **Novērsta priekšlaicīga statusa maiņa bez materiālu rezervēšanas**: Nospiežot *"Sākt auto-rezervāciju"* (tostarp apstiprinot rasējumu izņēmuma logu), paplašinājums kā prioritāti vispirms atrod un nospiež pogu *"Rezervēt materiālus"*. Vairs nenotiek kļūdaina tūlītēja statusa maiņa pirms rezervācijas.
   - **Austra ERP bloķējošo kļūdu logu atpazīšana**: Ja Austra ERP atver atteikuma logu (piemēram, *"Uz ražošanu nevar nosūtīt, jo nav veikts CutRite aprēķina process"* vai *"nav veikta rezervācija"*), paplašinājums to uzreiz fiksē žurnālā kā kļūdu, atskaņo brīdinājuma signālu un neziņo par viltus veiksmi.
