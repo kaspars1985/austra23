@@ -337,6 +337,25 @@ body.austra-sidebar-open {
   flex-direction: column;
 }
 
+.austra-btn-clear-log {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 10.5px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.austra-btn-clear-log:hover {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
 .austra-log-view {
   font-size: 11px;
   color: #475569;

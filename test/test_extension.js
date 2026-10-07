@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-console.log('--- AUSTRA EXTENSION V1.2.7 VERIFICATION ---');
+console.log('--- AUSTRA EXTENSION V1.2.8 VERIFICATION ---');
 
 const extDir = path.join(__dirname, '..', 'extension');
 
@@ -14,10 +14,10 @@ if (!fs.existsSync(manifestPath)) {
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 console.log('✓ manifest.json is valid JSON');
 
-if (manifest.version !== '1.2.7') {
-  throw new Error(`manifest.json version should be 1.2.7, got ${manifest.version}`);
+if (manifest.version !== '1.2.8') {
+  throw new Error(`manifest.json version should be 1.2.8, got ${manifest.version}`);
 }
-console.log('✓ manifest.json version is 1.2.7');
+console.log('✓ manifest.json version is 1.2.8');
 
 if (manifest.action.default_popup) {
   throw new Error('default_popup should not be set (we want direct sidebar toggle via chrome.action.onClicked)!');
@@ -47,19 +47,19 @@ for (const cs of manifest.content_scripts) {
     if (!fs.existsSync(jsPath)) throw new Error(`Content script missing: ${jsFile}`);
     const code = fs.readFileSync(jsPath, 'utf8');
     new vm.Script(code); // syntax check
-    if (!code.includes("const CURRENT_VERSION = '1.2.7'")) {
-      throw new Error('content.js is missing CURRENT_VERSION = 1.2.7');
+    if (!code.includes("const CURRENT_VERSION = '1.2.8'")) {
+      throw new Error('content.js is missing CURRENT_VERSION = 1.2.8');
     }
-    if (!code.includes('findModalConfirmButton') || !code.includes('waitForAndConfirmModal')) {
-      throw new Error('content.js is missing modal confirmation functions!');
+    if (!code.includes('findModalConfirmButton') || !code.includes('waitForAndConfirmModal') || !code.includes('checkModalForErrors')) {
+      throw new Error('content.js is missing modal confirmation and error inspection functions!');
     }
     if (!code.includes('isPriceAgreedStatus') || !code.includes('isDrawingStatus') || !code.includes('showDrawingConfirmationDialog')) {
       throw new Error('content.js is missing status validation and drawing exception dialog functions!');
     }
-    if (!code.includes('austra-alert-btn-confirm') || !code.includes('austra-alert-btn-cancel')) {
-      throw new Error('content.js is missing confirmation dialog buttons!');
+    if (!code.includes('saveLogToSession') || !code.includes('loadLogFromSession')) {
+      throw new Error('content.js is missing activity log persistence functions!');
     }
-    console.log(`✓ ${jsFile} syntax is valid, contains modal, status validation and drawing exception dialog`);
+    console.log(`✓ ${jsFile} syntax is valid, contains modal validation, error inspection, drawing dialog, and log persistence`);
   }
   for (const cssFile of cs.css) {
     const cssPath = path.join(extDir, cssFile);
@@ -71,13 +71,13 @@ for (const cs of manifest.content_scripts) {
     if (!cssContent.includes('#austra-alert-btn-ok') || !cssContent.includes('#austra-alert-btn-confirm')) {
       throw new Error('styles.css is missing #austra-alert-btn-ok / #austra-alert-btn-confirm styling!');
     }
-    if (!cssContent.includes('#austra-alert-btn-cancel')) {
-      throw new Error('styles.css is missing #austra-alert-btn-cancel styling!');
+    if (!cssContent.includes('.austra-btn-clear-log')) {
+      throw new Error('styles.css is missing .austra-btn-clear-log styling!');
     }
     if (!cssContent.includes('.austra-log-card') || !cssContent.includes('.austra-log-view')) {
       throw new Error('styles.css is missing log card styling!');
     }
-    console.log(`✓ ${cssFile} verified with layout shifting rules, alert buttons, and expanded log card`);
+    console.log(`✓ ${cssFile} verified with layout shifting rules, alert buttons, clear log button, and expanded log card`);
   }
 }
 
@@ -89,13 +89,16 @@ function parseRgb(colorStr) {
 
 function evaluateTestDot(className, colorStr) {
   const rgb = parseRgb(colorStr);
-  if (className.includes('jfxJkt')) return { isGreen: true };
+  if (className.includes('jfxJkt') || /\b(bg-success|text-success|is-success)\b/i.test(className)) {
+    return { isGreen: true };
+  }
   if (rgb) {
-    const isAustraGreen = (Math.abs(rgb.r - 138) < 25 && Math.abs(rgb.g - 209) < 25 && Math.abs(rgb.b - 107) < 25);
-    const isGenericGreen = (rgb.g > 110 && rgb.g > rgb.r * 1.15 && rgb.g > rgb.b * 1.15);
-    const isAustraGrey = (Math.abs(rgb.r - 231) < 15 && Math.abs(rgb.g - 234) < 15 && Math.abs(rgb.b - 239) < 15);
-    const isGrey = (Math.abs(rgb.r - rgb.g) < 15 && Math.abs(rgb.g - rgb.b) < 15);
-    if ((isAustraGreen || isGenericGreen) && !isAustraGrey && !isGrey) return { isGreen: true };
+    const maxDiff = Math.max(rgb.r, rgb.g, rgb.b) - Math.min(rgb.r, rgb.g, rgb.b);
+    const isGrey = (maxDiff < 25) ||
+                   (Math.abs(rgb.r - 231) < 18 && Math.abs(rgb.g - 234) < 18 && Math.abs(rgb.b - 239) < 18);
+    const isAustraGreen = (Math.abs(rgb.r - 138) < 30 && Math.abs(rgb.g - 209) < 30 && Math.abs(rgb.b - 107) < 30);
+    const isGenericGreen = (rgb.g >= 125 && rgb.g > rgb.r + 25 && rgb.g > rgb.b + 25);
+    if ((isAustraGreen || isGenericGreen) && !isGrey) return { isGreen: true };
   }
   return { isGreen: false };
 }
@@ -104,9 +107,20 @@ const emptyTest = evaluateTestDot('sc-kfPsKX lmcRNk', 'rgb(231, 234, 239)');
 if (emptyTest.isGreen !== false) throw new Error('Empty dot was falsely identified as green!');
 console.log('✓ Empty dot (rgb 231,234,239, class lmcRNk) correctly identified as pending');
 
+const whiteTest = evaluateTestDot('', 'rgb(255, 255, 255)');
+if (whiteTest.isGreen !== false) throw new Error('White element falsely identified as green!');
+
+const pastelTest = evaluateTestDot('', 'rgb(220, 252, 231)'); // #dcfce7 light alert
+if (pastelTest.isGreen !== false) throw new Error('Pastel green border/background falsely identified as green dot!');
+console.log('✓ Pastel backgrounds correctly ignored');
+
 const greenTest = evaluateTestDot('sc-kfPsKX jfxJkt', 'rgb(138, 209, 107)');
 if (greenTest.isGreen !== true) throw new Error('Green dot failed detection!');
 console.log('✓ Green dot (rgb 138,209,107, class jfxJkt) correctly identified as green');
+
+const austraGreenNoClass = evaluateTestDot('some-dot', 'rgb(138, 209, 107)');
+if (austraGreenNoClass.isGreen !== true) throw new Error('Austra green dot failed RGB detection!');
+console.log('✓ Austra green RGB (138, 209, 107) correctly identified without jfxJkt class');
 
 // 6. Test Semver comparison logic
 function compareSemver(v1, v2) {
@@ -121,10 +135,10 @@ function compareSemver(v1, v2) {
   return 0;
 }
 
-if (compareSemver('1.2.1', '1.2.0') <= 0) throw new Error('Semver 1.2.1 should be greater than 1.2.0');
+if (compareSemver('1.2.8', '1.2.7') <= 0) throw new Error('Semver 1.2.8 should be greater than 1.2.7');
 if (compareSemver('2.0.0', '1.9.9') <= 0) throw new Error('Semver 2.0.0 should be greater than 1.9.9');
-if (compareSemver('1.2.0', '1.2.0') !== 0) throw new Error('Semver 1.2.0 should be equal to 1.2.0');
-if (compareSemver('1.1.9', '1.2.0') >= 0) throw new Error('Semver 1.1.9 should be less than 1.2.0');
+if (compareSemver('1.2.8', '1.2.8') !== 0) throw new Error('Semver 1.2.8 should be equal to 1.2.8');
+if (compareSemver('1.2.7', '1.2.8') >= 0) throw new Error('Semver 1.2.7 should be less than 1.2.8');
 console.log('✓ Semver update comparison correctly detects newer, older, and equal versions');
 
 // 7. Test Order Status validation logic
@@ -159,5 +173,14 @@ if (isDrawingStatus('')) throw new Error('False positive for empty drawing statu
 if (isDrawingStatus(null)) throw new Error('False positive for null drawing status!');
 console.log('✓ Drawing exception status logic correctly detects drawing coordination orders');
 
-console.log('\n>>> ALL AUTOMATED TESTS PASSED SUCCESSFULLY! <<<');
+// 9. Test Modal Error matching logic
+function isModalError(text) {
+  return /nevar nosūtīt/i.test(text) || /nav veikts/i.test(text) || /nav veikta rezervācija/i.test(text);
+}
 
+const mockAustraError = "Uz ražošanu nevar nosūtīt, jo nav veikts CutRite aprēķina process\nUz ražošanu nevar nosūtīt, jo nav veikta rezervācija";
+if (!isModalError(mockAustraError)) throw new Error('Failed to detect Austra ERP modal error messages!');
+if (isModalError('Vai apstiprināt pasūtījuma nodošanu ražošanā?')) throw new Error('False positive for standard confirmation modal!');
+console.log('✓ Modal error inspection logic correctly identifies blocking error messages from ERP');
+
+console.log('\n>>> ALL AUTOMATED TESTS PASSED SUCCESSFULLY! <<<');

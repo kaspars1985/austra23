@@ -160,6 +160,12 @@ Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ār
 
 ## 📋 Versiju vēsture
 
+- **v1.2.8**
+  - **Novērsta priekšlaicīga statusa maiņa bez materiālu rezervēšanas**: Nospiežot *"Sākt auto-rezervāciju"* (tostarp apstiprinot rasējumu izņēmuma logu), paplašinājums kā prioritāti vispirms atrod un nospiež pogu *"Rezervēt materiālus"*. Vairs nenotiek kļūdaina tūlītēja statusa maiņa pirms rezervācijas.
+  - **Austra ERP bloķējošo kļūdu logu atpazīšana**: Ja Austra ERP atver atteikuma logu (piemēram, *"Uz ražošanu nevar nosūtīt, jo nav veikts CutRite aprēķina process"* vai *"nav veikta rezervācija"*), paplašinājums to uzreiz fiksē žurnālā kā kļūdu, atskaņo brīdinājuma signālu un neziņo par viltus veiksmi.
+  - **Darbību žurnāla vēstures saglabāšana (`sessionStorage`)**: Žurnāla ieraksti tagad tiek saglabāti katram pasūtījumam atsevišķi pāri visām lapas pārlādēm. Kad lapa pēc rezervācijas pārlādējas, visi iepriekšējie soļi paliek redzami žurnālā.
+  - Pievienota ērta žurnāla notīrīšanas poga *"Notīrīt"* žurnāla kartes galvenē.
+  - Pilnveidota indikatoru izolācija (izslēdzot sānu paneli un modāļus) un precizēta krāsu pārbaudes loģika, novēršot viltus zaļo indikatoru nolasīšanu.
 - **v1.2.7**
   - Ieviests inteliģents izņēmums pasūtījumiem ar rasējumiem: ja pasūtījuma statuss ir *"Rasējumu saskaņošana ar klientu"*, tiek atvērts apstiprinājuma logs ar iespēju ar vienu klikšķi apliecināt, ka klients rasējumus ir saskaņojis (*"Rasējumi saskaņoti – Turpināt 🚀"*), un uzreiz palaist procesu.
   - Sānu paneļa statusa rādītājā rasējumu pasūtījumi tiek izcelti ar zilu informatīvu statusa joslu.

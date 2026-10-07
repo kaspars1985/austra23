@@ -13,7 +13,7 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.7';
+  const CURRENT_VERSION = '1.2.8';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
 
@@ -67,6 +67,34 @@
   function clearSessionState() {
     try {
       const key = getSessionStorageKey();
+      sessionStorage.removeItem(key);
+    } catch (e) {}
+  }
+
+  // --- DARBĪBU ŽURNĀLA SAGLABĀŠANA (Pāri lapas pārlādēm) ---
+  function getLogSessionKey() {
+    const code = getOrderCode();
+    return `austra_log_${code}`;
+  }
+
+  function saveLogToSession(logText) {
+    try {
+      const key = getLogSessionKey();
+      sessionStorage.setItem(key, logText);
+    } catch (e) {}
+  }
+
+  function loadLogFromSession() {
+    try {
+      const key = getLogSessionKey();
+      return sessionStorage.getItem(key) || '';
+    } catch (e) {}
+    return '';
+  }
+
+  function clearLogSession() {
+    try {
+      const key = getLogSessionKey();
       sessionStorage.removeItem(key);
     } catch (e) {}
   }
@@ -228,7 +256,13 @@
     for (const kw of keywords) {
       // Meklējam elementu ar precīzo tooltip tekstu
       const selector = `[aria-label*="${kw}" i], [data-bs-original-title*="${kw}" i], [data-original-title*="${kw}" i], [title*="${kw}" i]`;
-      const matches = Array.from(document.querySelectorAll(selector));
+      const matches = Array.from(document.querySelectorAll(selector)).filter(el => {
+        // Stingri izslēdzam sānu paneli, tā cilni, apstiprinājumu dialogus un modālos logus
+        if (el.closest('#austra-sidebar') || el.closest('#austra-sidebar-tab') || el.closest('#austra-alert-overlay') || el.closest('.modal, [role="dialog"]')) {
+          return false;
+        }
+        return true;
+      });
       // Prioritāte 1: mazais aplītis (bērnu nav, teksta garums <= 3)
       const dot = matches.find(el => el.children.length === 0 && (el.innerText || '').trim().length <= 3);
       if (dot) return dot;
@@ -264,34 +298,35 @@
   function evaluateDot(el) {
     if (!el) return { exists: false, isGreen: false, isRed: false, isPending: true };
 
-    const className = el.className || '';
+    const className = String(el.className || '');
     const style = window.getComputedStyle(el);
     const bg = style.backgroundColor || '';
     const rgb = parseRgb(bg);
 
-    // 1. Klases pārbaude (Austra ERP zaļās klases nosaukums ir jfxJkt)
-    if (className.includes('jfxJkt') || className.includes('bg-success') || className.includes('text-success') || className.includes('success')) {
+    // 1. Klases pārbaude (Austra ERP testa lapas zaļā klase ir jfxJkt vai Bootstrap klases)
+    if (className.includes('jfxJkt') || /\b(bg-success|text-success|is-success)\b/i.test(className)) {
       return { exists: true, isGreen: true, isRed: false, isPending: false };
     }
-    if (className.includes('bg-danger') || className.includes('is-invalid') || className.includes('error') || className.includes('danger')) {
+    if (/\b(bg-danger|text-danger|is-invalid|is-error)\b/i.test(className)) {
       return { exists: true, isGreen: false, isRed: true, isPending: false };
     }
 
     // 2. RGB krāsu pārbaude (Austra zaļais: rgb(138, 209, 107), tukšais pelēkais: rgb(231, 234, 239))
     if (rgb) {
-      // Tukšais punkts ir pelēks (r, g, b ļoti tuvu viens otram ap 230)
-      const isGrey = (Math.abs(rgb.r - 231) < 18 && Math.abs(rgb.g - 234) < 18 && Math.abs(rgb.b - 239) < 18) ||
-                     (Math.abs(rgb.r - rgb.g) < 12 && Math.abs(rgb.g - rgb.b) < 12);
+      // Pārbaudām, vai krāsa ir pelēka (r, g, b ļoti tuvu viens otram)
+      const maxDiff = Math.max(rgb.r, rgb.g, rgb.b) - Math.min(rgb.r, rgb.g, rgb.b);
+      const isGrey = (maxDiff < 25) ||
+                     (Math.abs(rgb.r - 231) < 18 && Math.abs(rgb.g - 234) < 18 && Math.abs(rgb.b - 239) < 18);
 
-      // Zaļā krāsa (Austra zaļais vai vispārējs zaļais ar g dominanci)
+      // Austra zaļais (rgb ap 138, 209, 107) vai vispārējs izteikts zaļais tonis
       const isAustraGreen = (Math.abs(rgb.r - 138) < 30 && Math.abs(rgb.g - 209) < 30 && Math.abs(rgb.b - 107) < 30);
-      const isGenericGreen = (rgb.g > 105 && rgb.g > rgb.r * 1.1 && rgb.g > rgb.b * 1.1);
+      const isGenericGreen = (rgb.g >= 125 && rgb.g > rgb.r + 25 && rgb.g > rgb.b + 25);
 
       if ((isAustraGreen || isGenericGreen) && !isGrey) {
         return { exists: true, isGreen: true, isRed: false, isPending: false };
       }
 
-      if (rgb.r > 150 && rgb.r > rgb.g * 1.3 && rgb.r > rgb.b * 1.3) {
+      if (rgb.r > 160 && rgb.r > rgb.g + 35 && rgb.r > rgb.b + 35 && !isGrey) {
         return { exists: true, isGreen: false, isRed: true, isPending: false };
       }
     }
@@ -706,11 +741,53 @@
     return null;
   }
 
+  function checkModalForErrors() {
+    const modalSelectors = [
+      '.modal',
+      '.modal-dialog',
+      '.modal-content',
+      '[role="dialog"]',
+      '.dialog',
+      '.popup',
+      '.sweet-alert',
+      '.swal2-container',
+      '.swal2-modal',
+      'div[class*="modal" i]',
+      'div[class*="dialog" i]',
+      'div[class*="popup" i]'
+    ];
+
+    const modals = Array.from(document.querySelectorAll(modalSelectors.join(', '))).filter(el => {
+      if (el.closest('#austra-sidebar') || el.id === 'austra-sidebar' || el.closest('#austra-sidebar-tab') || el.closest('#austra-alert-overlay')) return false;
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+    });
+
+    for (const modal of modals) {
+      const text = (modal.innerText || '').trim();
+      if (/nevar nosūtīt/i.test(text) || /nav veikts/i.test(text) || /nav veikta rezervācija/i.test(text)) {
+        const errorLines = text.split('\n')
+          .map(l => l.trim())
+          .filter(l => l.length > 5 && (/nevar nosūtīt/i.test(l) || /nav veikts/i.test(l) || /nav veikta/i.test(l)));
+        return errorLines.length > 0 ? errorLines.join('; ') : text.slice(0, 200);
+      }
+    }
+    return null;
+  }
+
   async function waitForAndConfirmModal(timeoutMs = 4500) {
     logActivity('Gaida apstiprinājuma logu...');
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeoutMs) {
+      // 1. Pārbaudām, vai nav atvēries bloķējošs kļūdas/brīdinājuma logs
+      const errorMsg = checkModalForErrors();
+      if (errorMsg) {
+        logActivity(`⚠️ Austra ERP bloķēja: ${errorMsg}`);
+        throw new Error(errorMsg);
+      }
+
+      // 2. Meklējam apstiprinājuma pogu
       const confirmBtn = findModalConfirmButton();
       if (confirmBtn) {
         logActivity('Apstiprina modālo logu "Uz ražošanu"...');
@@ -718,10 +795,24 @@
         dispatchClick(confirmBtn);
         confirmBtn.click();
         await new Promise(r => setTimeout(r, 400));
+
+        // Pārbaudām, vai pēc apstiprināšanas neparādījās kļūda
+        const postError = checkModalForErrors();
+        if (postError) {
+          logActivity(`⚠️ Austra ERP bloķēja: ${postError}`);
+          throw new Error(postError);
+        }
+
         logActivity('Modālais logs veiksmīgi apstiprināts!');
         return true;
       }
       await new Promise(r => setTimeout(r, 200));
+    }
+
+    const finalError = checkModalForErrors();
+    if (finalError) {
+      logActivity(`⚠️ Austra ERP bloķēja: ${finalError}`);
+      throw new Error(finalError);
     }
 
     logActivity('Modālais logs netika konstatēts (varbūt nav nepieciešams).');
@@ -774,14 +865,14 @@
     dispatchClick(manufacturingLink);
     manufacturingLink.click();
 
-    // Saglabājam pabeigšanas marķieri gadījumam, ja modāļa apstiprināšana izraisa lapas pārlādi
+    // 3. Gaidām un apstiprinām modālo logu (ja ERP izmet atteikuma logu, šeit tiks izmests Error)
+    await waitForAndConfirmModal(4500);
+
+    // Saglabājam pabeigšanas marķieri TIKAI tad, ja modālis ir veiksmīgi apstiprināts bez kļūdām
     const orderCode = getOrderCode();
     try {
       sessionStorage.setItem(`austra_completed_${orderCode}`, String(Date.now()));
     } catch (e) {}
-
-    // 3. Gaidām un apstiprinām modālo logu
-    await waitForAndConfirmModal(4500);
 
     logActivity('Statuss nomainīts uz "Uz ražošanu"!');
   }
@@ -900,8 +991,11 @@
         </div>
 
         <div class="austra-log-card">
-          <div class="austra-section-title">Darbību žurnāls</div>
-          <div class="austra-log-view" id="austra-sidebar-log">Gaidu palaišanu...</div>
+          <div class="austra-section-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Darbību žurnāls</span>
+            <button id="austra-btn-clear-log" class="austra-btn-clear-log" type="button" title="Notīrīt šī pasūtījuma žurnālu">Notīrīt</button>
+          </div>
+          <div class="austra-log-view" id="austra-sidebar-log">${loadLogFromSession() || 'Gaidu palaišanu...'}</div>
         </div>
       </div>
 
@@ -926,6 +1020,16 @@
 
     // Event Listeners
     sidebarEl.querySelector('#austra-btn-collapse').addEventListener('click', closeSidebar);
+
+    const clearLogBtn = sidebarEl.querySelector('#austra-btn-clear-log');
+    if (clearLogBtn) {
+      clearLogBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        clearLogSession();
+        const logBox = document.getElementById('austra-sidebar-log');
+        if (logBox) logBox.innerText = 'Gaidu palaišanu...';
+      });
+    }
 
     const actionBtn = sidebarEl.querySelector('#austra-sidebar-action-btn');
     actionBtn.addEventListener('click', handleActionClick);
@@ -958,9 +1062,19 @@
   function logActivity(text) {
     console.log('[Austra Addon]', text);
     const logBox = document.getElementById('austra-sidebar-log');
+    const time = new Date().toLocaleTimeString('lv-LV', { hour12: false });
+    const line = `[${time}] ${text}`;
+
     if (logBox) {
-      const time = new Date().toLocaleTimeString('lv-LV', { hour12: false });
-      logBox.innerText = `[${time}] ${text}\n` + logBox.innerText.slice(0, 4000);
+      const current = (logBox.innerText || '').trim();
+      const existing = (current === 'Gaidu palaišanu...') ? '' : current;
+      const updated = existing ? `${line}\n${existing}` : line;
+      logBox.innerText = updated.slice(0, 8000);
+      saveLogToSession(logBox.innerText);
+    } else {
+      const existing = loadLogFromSession();
+      const updated = existing ? `${line}\n${existing}` : line;
+      saveLogToSession(updated.slice(0, 8000));
     }
   }
 
@@ -1029,6 +1143,16 @@
     STATE.timerInterval = setInterval(updateTimer, 1000);
     updateTimer();
 
+    // 1. Prioritāte: Ja poga "Rezervēt materiālus" ir pieejama lapā, OBLIGĀTI to nospiežam un sākam novērošanu!
+    const reserveBtn = findReserveButton();
+    if (reserveBtn) {
+      logActivity('Nospiež "Rezervēt materiālus"...');
+      reserveBtn.click();
+      startMonitoring();
+      return;
+    }
+
+    // 2. Ja rezervēšanas pogas lapā nav, pārbaudām, vai visi indikatori jau ir zaļi
     const initialCheck = updateIndicatorBadges();
     if (initialCheck.allGreen) {
       logActivity('Visi 3 indikatori jau ir zaļi! Mainām statusu...');
@@ -1036,16 +1160,9 @@
       return;
     }
 
-    // Sākam vienmērīgu 1-sekundes uzraudzību
+    // 3. Ja poga netika atrasta un visi indikatori vēl nav zaļi, turpinām novērošanu
+    logActivity('Poga "Rezervēt materiālus" netika atrasta (iespējams, jau nospiesta). Turpinu novērošanu.');
     startMonitoring();
-
-    const reserveBtn = findReserveButton();
-    if (reserveBtn) {
-      logActivity('Nospiež "Rezervēt materiālus"...');
-      reserveBtn.click();
-    } else {
-      logActivity('Poga "Rezervēt materiālus" netika atrasta (iespējams, jau nospiesta). Turpinu novērošanu.');
-    }
   }
 
   async function startAutomation() {
