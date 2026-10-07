@@ -160,6 +160,9 @@ Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ār
 
 ## 📋 Versiju vēsture
 
+- **v1.2.10**
+  - **Draudzīgs brīdinājums jau ražošanā esošiem pasūtījumiem**: Ja lietotājs nospiež *"🚀 Sākt auto-rezervāciju"* pasūtījumam, kura statuss jau ir *"Uz ražošanu"*, vairs netiek kļūdaini rādīts logs par cenu saskaņošanu. Tā vietā tiek parādīts skaidrs paziņojums: *"Netupī, draugs! Šis pasūtījums jau ražojas."*
+  - **Sānu paneļa statusa indikācija ražošanai**: Statusa birka sānu panelī statusam *"Uz ražošanu"* tiek iekrāsota atbilstošā ražošanas zaļā tonī ar skaidru paskaidrojumu *"Pasūtījums jau ir nodots ražošanā"*.
 - **v1.2.9**
   - **Pabeigšanas laika zīmogs darbību žurnālā**: Pēc veiksmīgas statusa maiņas uz "Uz ražošanu" darbību žurnālā tiek fiksēts skaidrs un pamanāms ieraksts ar precīzu laiku: `✅ Pasūtījums veiksmīgi palaists ražoties plkst. HH:MM`.
   - **Iepriekš palaistu pasūtījumu atpazīšana**: Ja lietotājs atver vai pārlādē pasūtījumu, kas šajā sesijā jau veiksmīgi palaists ražošanā, darbību žurnālā uzreiz tiek parādīts informatīvs paziņojums: `ℹ️ Šis pasūtījums jau ir palaists ražoties plkst. HH:MM`.

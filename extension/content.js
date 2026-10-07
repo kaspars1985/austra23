@@ -13,7 +13,7 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.9';
+  const CURRENT_VERSION = '1.2.10';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
 
@@ -481,11 +481,90 @@
     return /ras[eē]jum/i.test(status);
   }
 
+  function isManufacturingStatus(statusStr) {
+    const status = statusStr !== undefined ? statusStr : getCurrentOrderStatus();
+    if (!status) return false;
+    return /ražo/i.test(status);
+  }
+
   function resetSidebarStatusMsg() {
     const statusMsg = document.getElementById('austra-sidebar-status-msg');
     const statusIcon = document.getElementById('austra-sidebar-status-icon');
     if (statusMsg) statusMsg.innerText = 'Gatavs darbam';
     if (statusIcon) statusIcon.innerText = '⚪';
+  }
+
+  function showAlreadyInManufacturingDialog(currentStatus) {
+    if (document.getElementById('austra-alert-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'austra-alert-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.65);backdrop-filter:blur(2px);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;animation:austraFadeIn 0.2s ease-out;';
+
+    const box = document.createElement('div');
+    box.id = 'austra-alert-box';
+    box.style.cssText = 'background:#ffffff;border-radius:12px;width:100%;max-width:480px;box-shadow:0 20px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(16,185,129,0.25);overflow:hidden;display:flex;flex-direction:column;';
+
+    box.innerHTML = `
+      <div style="background:#f0fdf4;border-bottom:1px solid #dcfce7;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:24px;line-height:1;">🏭</span>
+          <div>
+            <h3 style="margin:0;font-size:15px;font-weight:700;color:#166534;">Pasūtījums jau ražošanā</h3>
+            <span style="font-size:11.5px;color:#15803d;">Austra ERP paziņojums</span>
+          </div>
+        </div>
+        <button id="austra-alert-close-x" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:4px;">&times;</button>
+      </div>
+
+      <div style="padding:20px;font-size:13.5px;color:#334155;line-height:1.5;">
+        <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:10px;">
+          Netupī, draugs! Šis pasūtījums jau ražojas.
+        </div>
+        <p style="margin:0 0 14px 0;color:#475569;">
+          Šim pasūtījumam sistēmā jau ir piešķirts statuss <strong>"${currentStatus || 'Uz ražošanu'}"</strong>. Materiāli jau ir rezervēti un process ir nodots ražošanai, tāpēc atkārtota palaišana nav nepieciešama.
+        </p>
+
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:12.5px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="color:#64748b;">Pašreizējais statuss:</span>
+            <span style="font-weight:700;color:#15803d;background:#dcfce7;padding:3px 8px;border-radius:4px;border:1px solid #86efac;">
+              ${currentStatus || 'Uz ražošanu'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#f8fafc;border-top:1px solid #f1f5f9;padding:12px 20px;display:flex;justify-content:flex-end;gap:10px;">
+        <button id="austra-alert-btn-ok" style="background:linear-gradient(135deg, #059669 0%, #10b981 100%);color:#ffffff;border:none;padding:8px 24px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 6px rgba(5,150,105,0.28);transition:all 0.2s ease;">
+          Labi, sapratu
+        </button>
+      </div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    const closeDialog = () => {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+      resetSidebarStatusMsg();
+    };
+
+    overlay.querySelector('#austra-alert-close-x').addEventListener('click', closeDialog);
+    overlay.querySelector('#austra-alert-btn-ok').addEventListener('click', closeDialog);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeDialog();
+    });
+
+    const escListener = (e) => {
+      if (e.key === 'Escape') {
+        closeDialog();
+        document.removeEventListener('keydown', escListener);
+      }
+    };
+    document.addEventListener('keydown', escListener);
   }
 
   function showStatusWarningDialog(message, currentStatus) {
@@ -675,8 +754,14 @@
     }
     const isAgreed = isPriceAgreedStatus(currentStatus);
     const isDrawing = isDrawingStatus(currentStatus);
+    const isManufacturing = isManufacturingStatus(currentStatus);
     el.innerText = currentStatus;
-    if (isAgreed) {
+    if (isManufacturing) {
+      el.style.color = '#15803d';
+      el.style.background = '#dcfce7';
+      el.style.border = '1px solid #86efac';
+      el.title = 'Pasūtījums jau ir nodots ražošanā';
+    } else if (isAgreed) {
       el.style.color = '#059669';
       el.style.background = '#dcfce7';
       el.style.border = '1px solid #86efac';
@@ -1200,8 +1285,23 @@
   }
 
   async function startAutomation() {
-    // 1. Drošības pārbaude: statuss "Cenu saskaņošana ar klientu" vai izņēmums rasējumiem
+    // 1. Drošības pārbaude: statuss "Cenu saskaņošana ar klientu", izņēmums rasējumiem vai brīdinājums ražošanai
     const currentStatus = getCurrentOrderStatus();
+
+    // 0. Pārbaude: vai pasūtījums jau ir nodots ražošanā
+    if (isManufacturingStatus(currentStatus)) {
+      const displayStatus = currentStatus || 'Uz ražošanu';
+      logActivity('ℹ️ Netupī, draugs! Šis pasūtījums jau ražojas.');
+      playSound('success');
+
+      const statusMsg = document.getElementById('austra-sidebar-status-msg');
+      const statusIcon = document.getElementById('austra-sidebar-status-icon');
+      if (statusMsg) statusMsg.innerText = 'Jau ražošanā';
+      if (statusIcon) statusIcon.innerText = '🏭';
+
+      showAlreadyInManufacturingDialog(displayStatus);
+      return;
+    }
 
     // A. Parastais atļautais ceļš: statuss "Cenu saskaņošana ar klientu"
     if (isPriceAgreedStatus(currentStatus)) {

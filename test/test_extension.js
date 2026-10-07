@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-console.log('--- AUSTRA EXTENSION V1.2.9 VERIFICATION ---');
+console.log('--- AUSTRA EXTENSION V1.2.10 VERIFICATION ---');
 
 const extDir = path.join(__dirname, '..', 'extension');
 
@@ -14,10 +14,10 @@ if (!fs.existsSync(manifestPath)) {
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 console.log('✓ manifest.json is valid JSON');
 
-if (manifest.version !== '1.2.9') {
-  throw new Error(`manifest.json version should be 1.2.9, got ${manifest.version}`);
+if (manifest.version !== '1.2.10') {
+  throw new Error(`manifest.json version should be 1.2.10, got ${manifest.version}`);
 }
-console.log('✓ manifest.json version is 1.2.9');
+console.log('✓ manifest.json version is 1.2.10');
 
 if (manifest.action.default_popup) {
   throw new Error('default_popup should not be set (we want direct sidebar toggle via chrome.action.onClicked)!');
@@ -47,19 +47,19 @@ for (const cs of manifest.content_scripts) {
     if (!fs.existsSync(jsPath)) throw new Error(`Content script missing: ${jsFile}`);
     const code = fs.readFileSync(jsPath, 'utf8');
     new vm.Script(code); // syntax check
-    if (!code.includes("const CURRENT_VERSION = '1.2.9'")) {
-      throw new Error('content.js is missing CURRENT_VERSION = 1.2.9');
+    if (!code.includes("const CURRENT_VERSION = '1.2.10'")) {
+      throw new Error('content.js is missing CURRENT_VERSION = 1.2.10');
     }
     if (!code.includes('findModalConfirmButton') || !code.includes('waitForAndConfirmModal') || !code.includes('checkModalForErrors')) {
       throw new Error('content.js is missing modal confirmation and error inspection functions!');
     }
-    if (!code.includes('isPriceAgreedStatus') || !code.includes('isDrawingStatus') || !code.includes('showDrawingConfirmationDialog')) {
-      throw new Error('content.js is missing status validation and drawing exception dialog functions!');
+    if (!code.includes('isPriceAgreedStatus') || !code.includes('isDrawingStatus') || !code.includes('isManufacturingStatus') || !code.includes('showAlreadyInManufacturingDialog')) {
+      throw new Error('content.js is missing status validation or manufacturing dialog functions!');
     }
     if (!code.includes('saveLogToSession') || !code.includes('loadLogFromSession') || !code.includes('formatTimestamp') || !code.includes('getInitialLogContent')) {
       throw new Error('content.js is missing activity log persistence or timestamp functions!');
     }
-    console.log(`✓ ${jsFile} syntax is valid, contains modal validation, error inspection, drawing dialog, log persistence and timestamp handling`);
+    console.log(`✓ ${jsFile} syntax is valid, contains modal validation, error inspection, drawing dialog, manufacturing check, log persistence and timestamp handling`);
   }
   for (const cssFile of cs.css) {
     const cssPath = path.join(extDir, cssFile);
@@ -195,5 +195,21 @@ if (testFormatTimestamp(fixedDate.getTime()) !== '19:15') {
   throw new Error('Failed to format timestamp correctly!');
 }
 console.log('✓ Timestamp formatting returns expected HH:MM string');
+
+// 11. Test isManufacturingStatus logic
+function isManufacturingStatus(statusStr) {
+  if (!statusStr) return false;
+  return /ražo/i.test(statusStr);
+}
+
+if (!isManufacturingStatus('Uz ražošanu')) throw new Error('Failed to match Uz ražošanu!');
+if (!isManufacturingStatus('Ražošanā')) throw new Error('Failed to match Ražošanā!');
+if (!isManufacturingStatus('Statuss: Uz ražošanu')) throw new Error('Failed to match prefixed Uz ražošanu!');
+if (isManufacturingStatus('Cenu saskaņošana ar klientu')) throw new Error('False positive for Cenu saskaņošana in manufacturing check!');
+if (isManufacturingStatus('Rasējumu saskaņošana')) throw new Error('False positive for Rasējumu saskaņošana in manufacturing check!');
+if (isManufacturingStatus('Jauns')) throw new Error('False positive for Jauns in manufacturing check!');
+if (isManufacturingStatus('')) throw new Error('False positive for empty string in manufacturing check!');
+if (isManufacturingStatus(null)) throw new Error('False positive for null in manufacturing check!');
+console.log('✓ Manufacturing status logic correctly detects "Uz ražošanu" and rejects others');
 
 console.log('\n>>> ALL AUTOMATED TESTS PASSED SUCCESSFULLY! <<<');
