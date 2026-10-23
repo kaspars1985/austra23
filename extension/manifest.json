@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Austra ERP - Auto-Rezervācija & Ražošana",
-  "version": "1.2.10",
-  "description": "Automatizē materiālu rezervēšanu un statusa maiņu Austra ERP ar iebūvētu cenu saskaņošanas statusa drošības pārbaudi.",
+  "name": "Austras auto-rezervācija & ražošana",
+  "version": "1.2.11",
+  "description": "Automatizēta materiālu rezervēšana un statusa maiņa Austrā",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
