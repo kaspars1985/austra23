@@ -42,6 +42,9 @@ Strādājot ar pasūtījumiem sistēmā `https://austra.amfurnitura.lv/order_man
 - **Audio signāli:**
   - Nav atkarības no ārējiem MP3 failiem vai interneta bibliotēkām – skaņa tiek ģenerēta tieši pārlūka dzinējā (Web Audio API).
   - Var ieslēgt vai izslēgt ar vienu klikšķi.
+- **Automātiski e-pasta paziņojumi kļūdu gadījumā (Power Automate):**
+  - Ja pasūtījumu neizdodas palaist ražošanā (sarkans indikators, bloķējošs ERP kļūdas logs, neizdevusies statusa maiņa vai 15 minūšu taimauts), paplašinājums var automātiski nosūtīt e-pastu caur lietotāja konfigurētu Microsoft Power Automate HTTP Webhook.
+  - Webhook saite un saņēmēja e-pasts tiek konfigurēti sānu paneļa kājenē (`⚙️ E-pasta iestatījumi`) un glabāti tikai lokāli pārlūkā (`chrome.storage.local`), iekļaujot arī tūlītējas pārbaudes pogu *"📨 Testēt e-pastu"*.
 - **Automātiska atjauninājumu pārbaude:**
   - Paplašinājums pats fonā pārbauda GitHub repozitoriju (`github.com/kaspars1985/austra23`).
   - Ja ir izlaista jaunāka versija, sānu panelī uzreiz parādās pamanāma paziņojuma josla ar pogu *"Atvērt GitHub un atjaunināt ↗"*.
@@ -154,12 +157,16 @@ Nē. Katra cilne darbojas pilnīgi neatkarīgi. Ja vienā cilnē palaižat rezer
 Tas ir sākuma stāvoklis – paplašinājums ir veiksmīgi pieslēdzies pasūtījumam un gaida, kad nospiedīsiet zaļo pogu "🚀 Sākt auto-rezervāciju".
 
 #### Vai paplašinājums sūta datus uz ārējiem serveriem?
-Nē. Paplašinājums darbojas 100% lokāli Jūsu datorā, neizmanto nekādus ārējus serverus vai trešo pušu analītiku.
+Paplašinājums darbojas lokāli Jūsu datorā un neizmanto nekādus trešo pušu analītikas serverus. Vienīgie ārējie savienojumi ir atjauninājumu pārbaude no GitHub repozitorija un, ja lietotājs pats to ir konfigurējis un ieslēdzis iestatījumos, kļūdu paziņojumu nosūtīšana uz lietotāja norādīto Microsoft Power Automate Webhook adresi.
 
 ---
 
 ## 📋 Versiju vēsture
 
+- **v1.3.0**
+  - **Automātiski e-pasta paziņojumi kļūdu gadījumā**: Pievienots atbalsts kļūdas un 15 minūšu taimauta paziņojumu sūtīšanai uz lietotāja konfigurētu Microsoft Power Automate HTTP Webhook (`Office 365 Outlook -> Send an email (V2)`).
+  - **Droši lokāli iestatījumi un testa poga**: Sānu paneļa kājenē pievienots *"E-pasts"* slēdzis un *"⚙️ E-pasta iestatījumi"* logs ar Webhook URL, saņēmēja e-pastu (glabājas tikai lokāli `chrome.storage.local`) un *"📨 Testēt e-pastu"* pogu tūlītējai pārbaudei.
+  - **Bagātīgs kļūdas saturs**: Nosūtītajā e-pastā tiek iekļauts pasūtījuma kods, tiešā saite uz pasūtījumu, kļūdas iemesls, visu 3 indikatoru statuss (`CutRite`, `BOM`, `Montāža`), darbību žurnāls un laika zīmogs.
 - **v1.2.11**
   - **Nosaukuma un apraksta uzlabojumi**: Paplašinājuma nosaukums precizēts uz *"Austras auto-rezervācija & ražošana"* un apraksts uz *"Automatizēta materiālu rezervēšana un statusa maiņa Austrā"*.
 - **v1.2.10**

@@ -21,6 +21,46 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ status: 'ok', id: notificationId });
     });
     return true; // Keep message channel open for async response
+  } else if (request.action === 'sendErrorEmail') {
+    let parsedUrl;
+    try {
+      parsedUrl = new URL((request.webhookUrl || '').trim());
+    } catch (e) {
+      parsedUrl = null;
+    }
+
+    if (!parsedUrl || parsedUrl.protocol !== 'https:') {
+      sendResponse({ status: 'error', message: 'Nederīgs Webhook URL (jāsākas ar https://)' });
+      return false;
+    }
+
+    (async () => {
+      try {
+        const res = await fetch(parsedUrl.toString(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request.payload || {})
+        });
+
+        if (res.ok) {
+          sendResponse({ status: 'ok', httpStatus: res.status });
+        } else {
+          const detail = await res.text().catch(() => '');
+          sendResponse({
+            status: 'error',
+            httpStatus: res.status,
+            message: `HTTP ${res.status}${detail ? ': ' + detail.slice(0, 200) : ''}`
+          });
+        }
+      } catch (err) {
+        sendResponse({
+          status: 'error',
+          message: err && err.message ? err.message : 'Tīkla kļūda'
+        });
+      }
+    })();
+
+    return true; // Keep message channel open for async response
   }
 });
 

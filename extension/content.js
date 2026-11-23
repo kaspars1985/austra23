@@ -13,9 +13,10 @@
   console.log('[Austra Addon] Ielādēts Austra ERP sānu paneļa automatizācijas skripts.');
 
   // Configuration & State
-  const CURRENT_VERSION = '1.2.11';
+  const CURRENT_VERSION = '1.3.0';
   const GITHUB_REPO_URL = 'https://github.com/kaspars1985/austra23';
   const GITHUB_RAW_MANIFEST = 'https://raw.githubusercontent.com/kaspars1985/austra23/main/extension/manifest.json';
+  const EMAIL_SETTINGS_STORAGE_KEY = 'austra_email_settings';
 
   const CONFIG = {
     maxTimeoutMs: 15 * 60 * 1000, // 15 minūtes
@@ -31,7 +32,10 @@
     pollInterval: null,
     observer: null,
     soundEnabled: true,
-    notificationsEnabled: true
+    notificationsEnabled: true,
+    emailEnabled: false,
+    emailWebhookUrl: '',
+    emailRecipient: ''
   };
 
   // --- SESSION PERSISTENCE (Pāri lapas pārlādēm) ---
@@ -264,6 +268,187 @@
     } catch (e) {
       console.warn('[Austra Addon] Paziņojuma kļūda:', e);
     }
+  }
+
+  // --- E-PASTA IESTATĪJUMI UN SŪTĪŠANA (Power Automate Webhook) ---
+  function isValidWebhookUrl(url) {
+    const trimmed = String(url || '').trim();
+    if (!trimmed) return false;
+    try {
+      const parsed = new URL(trimmed);
+      return parsed.protocol === 'https:';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function syncEmailCheckboxUI() {
+    const emailCheck = document.getElementById('austra-check-email');
+    if (emailCheck) {
+      emailCheck.checked = Boolean(STATE.emailEnabled);
+    }
+  }
+
+  function applyEmailSettingsToState(raw) {
+    if (!raw || typeof raw !== 'object') return;
+    STATE.emailEnabled = Boolean(raw.emailEnabled);
+    STATE.emailWebhookUrl = typeof raw.emailWebhookUrl === 'string' ? raw.emailWebhookUrl.trim() : '';
+    STATE.emailRecipient = typeof raw.emailRecipient === 'string' ? raw.emailRecipient.trim() : '';
+    syncEmailCheckboxUI();
+  }
+
+  function loadEmailSettings() {
+    return new Promise((resolve) => {
+      try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.get([EMAIL_SETTINGS_STORAGE_KEY], (result) => {
+            if (chrome.runtime && chrome.runtime.lastError) {
+              console.warn('[Austra Addon] Neizdevās nolasīt e-pasta iestatījumus:', chrome.runtime.lastError.message);
+            } else if (result && result[EMAIL_SETTINGS_STORAGE_KEY]) {
+              applyEmailSettingsToState(result[EMAIL_SETTINGS_STORAGE_KEY]);
+            }
+            resolve({
+              emailEnabled: STATE.emailEnabled,
+              emailWebhookUrl: STATE.emailWebhookUrl,
+              emailRecipient: STATE.emailRecipient
+            });
+          });
+          return;
+        }
+      } catch (e) {}
+
+      try {
+        const raw = localStorage.getItem(EMAIL_SETTINGS_STORAGE_KEY);
+        if (raw) {
+          applyEmailSettingsToState(JSON.parse(raw));
+        }
+      } catch (e) {}
+
+      resolve({
+        emailEnabled: STATE.emailEnabled,
+        emailWebhookUrl: STATE.emailWebhookUrl,
+        emailRecipient: STATE.emailRecipient
+      });
+    });
+  }
+
+  function saveEmailSettings(settings) {
+    const normalized = {
+      emailEnabled: Boolean(settings && settings.emailEnabled),
+      emailWebhookUrl: String((settings && settings.emailWebhookUrl) || '').trim(),
+      emailRecipient: String((settings && settings.emailRecipient) || '').trim()
+    };
+    applyEmailSettingsToState(normalized);
+
+    return new Promise((resolve) => {
+      try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.set({ [EMAIL_SETTINGS_STORAGE_KEY]: normalized }, () => {
+            if (chrome.runtime && chrome.runtime.lastError) {
+              console.warn('[Austra Addon] Neizdevās saglabāt e-pasta iestatījumus:', chrome.runtime.lastError.message);
+            }
+            resolve(normalized);
+          });
+          return;
+        }
+      } catch (e) {}
+
+      try {
+        localStorage.setItem(EMAIL_SETTINGS_STORAGE_KEY, JSON.stringify(normalized));
+      } catch (e) {}
+
+      resolve(normalized);
+    });
+  }
+
+  function formatIndicatorsSummary(statesOverride = null) {
+    const states = statesOverride || checkAllIndicators().states;
+    const toEmoji = (dot) => {
+      if (dot && dot.isGreen) return '🟢';
+      if (dot && dot.isRed) return '🔴';
+      return '⚪';
+    };
+    return `CutRite: ${toEmoji(states.cutrite)} | BOM: ${toEmoji(states.bom)} | Montāža: ${toEmoji(states.assembly)}`;
+  }
+
+  function formatFullTimestamp(date = new Date()) {
+    const d = date instanceof Date ? date : new Date(date);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+  }
+
+  async function sendErrorEmail(errorMessage, isTest = false, overrideSettings = null) {
+    const settings = overrideSettings || {
+      emailEnabled: STATE.emailEnabled,
+      emailWebhookUrl: STATE.emailWebhookUrl,
+      emailRecipient: STATE.emailRecipient
+    };
+
+    if (!isTest && !settings.emailEnabled) {
+      return { status: 'skipped' };
+    }
+
+    const webhookUrl = String(settings.emailWebhookUrl || '').trim();
+    if (!isValidWebhookUrl(webhookUrl)) {
+      const msg = 'Nav norādīts derīgs HTTPS Webhook URL';
+      logActivity(`⚠️ E-pasts netika nosūtīts: ${msg}.`);
+      return { status: 'error', message: msg };
+    }
+
+    const logBox = document.getElementById('austra-sidebar-log');
+    const rawLog = (logBox ? logBox.innerText : loadLogFromSession()) || '';
+
+    const payload = {
+      orderCode: getOrderCode(),
+      orderUrl: window.location.href,
+      errorMessage: isTest ? `[TESTS] ${errorMessage}` : String(errorMessage || 'Nezināma kļūda'),
+      recipientEmail: String(settings.emailRecipient || '').trim(),
+      indicators: formatIndicatorsSummary(),
+      log: String(rawLog).slice(0, 2000),
+      timestamp: formatFullTimestamp()
+    };
+
+    logActivity(isTest ? '📧 Sūta testa e-pastu...' : '📧 Sūta kļūdas e-pastu...');
+
+    if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+      const errMsg = 'Paplašinājuma fona serviss nav pieejams';
+      logActivity(`⚠️ Neizdevās nosūtīt e-pastu: ${errMsg}`);
+      return { status: 'error', message: errMsg };
+    }
+
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage(
+          { action: 'sendErrorEmail', webhookUrl, payload },
+          (response) => {
+            if (chrome.runtime && chrome.runtime.lastError) {
+              const errMsg = chrome.runtime.lastError.message || 'Savienojuma kļūda ar fona servisu';
+              logActivity(`⚠️ Neizdevās nosūtīt e-pastu: ${errMsg}`);
+              resolve({ status: 'error', message: errMsg });
+              return;
+            }
+
+            if (response && response.status === 'ok') {
+              logActivity(isTest ? '📧 Testa e-pasts veiksmīgi nosūtīts!' : '📧 Kļūdas e-pasts veiksmīgi nosūtīts!');
+              resolve(response);
+            } else {
+              const errMsg = (response && response.message) || 'Nezināma kļūda';
+              logActivity(`⚠️ Neizdevās nosūtīt e-pastu: ${errMsg}`);
+              resolve({ status: 'error', message: errMsg, httpStatus: response && response.httpStatus });
+            }
+          }
+        );
+      } catch (e) {
+        const errMsg = (e && e.message) || 'Kļūda sūtot pieprasījumu';
+        logActivity(`⚠️ Neizdevās nosūtīt e-pastu: ${errMsg}`);
+        resolve({ status: 'error', message: errMsg });
+      }
+    });
   }
 
   // --- DOM SELECTORS & INSPECTORS ---
@@ -741,6 +926,158 @@
     });
   }
 
+  function showEmailSettingsDialog() {
+    if (document.getElementById('austra-alert-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'austra-alert-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.65);backdrop-filter:blur(2px);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;animation:austraFadeIn 0.2s ease-out;';
+
+    const box = document.createElement('div');
+    box.id = 'austra-alert-box';
+    box.style.cssText = 'background:#ffffff;border-radius:12px;width:100%;max-width:520px;box-shadow:0 20px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(16,185,129,0.25);overflow:hidden;display:flex;flex-direction:column;';
+
+    box.innerHTML = `
+      <div style="background:#f0fdf4;border-bottom:1px solid #dcfce7;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:22px;line-height:1;">📧</span>
+          <div>
+            <h3 style="margin:0;font-size:15px;font-weight:700;color:#166534;">E-pasta paziņojumu iestatījumi</h3>
+            <span style="font-size:11.5px;color:#15803d;">Microsoft Power Automate Webhook</span>
+          </div>
+        </div>
+        <button id="austra-alert-close-x" type="button" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:4px;">&times;</button>
+      </div>
+
+      <div style="padding:18px 20px;font-size:13px;color:#334155;line-height:1.45;">
+        <label class="austra-email-toggle-row">
+          <input type="checkbox" id="austra-email-enabled-input" />
+          <span>Automātiski sūtīt e-pastu kļūdas gadījumā</span>
+        </label>
+
+        <div class="austra-email-form-group">
+          <label class="austra-email-label" for="austra-email-webhook-input">Power Automate Webhook URL</label>
+          <input type="url" id="austra-email-webhook-input" class="austra-email-input" placeholder="https://...powerplatform.com/.../invoke?..." autocomplete="off" />
+          <div class="austra-email-hint">Tiek glabāts tikai lokāli Jūsu pārlūkā (chrome.storage.local).</div>
+        </div>
+
+        <div class="austra-email-form-group">
+          <label class="austra-email-label" for="austra-email-recipient-input">Saņēmēja e-pasts</label>
+          <input type="email" id="austra-email-recipient-input" class="austra-email-input" placeholder="vards@amf.lv" autocomplete="email" />
+        </div>
+
+        <div id="austra-email-settings-status" class="austra-email-status-msg" style="display:none;"></div>
+      </div>
+
+      <div style="background:#f8fafc;border-top:1px solid #f1f5f9;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button id="austra-email-btn-test" type="button" class="austra-btn-email-test">
+          📨 Testēt e-pastu
+        </button>
+        <div style="display:flex;gap:10px;margin-left:auto;">
+          <button id="austra-alert-btn-cancel" type="button">
+            Atcelt
+          </button>
+          <button id="austra-alert-btn-confirm" type="button">
+            💾 Saglabāt
+          </button>
+        </div>
+      </div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    const enabledInput = box.querySelector('#austra-email-enabled-input');
+    const webhookInput = box.querySelector('#austra-email-webhook-input');
+    const recipientInput = box.querySelector('#austra-email-recipient-input');
+    const statusBox = box.querySelector('#austra-email-settings-status');
+    const testBtn = box.querySelector('#austra-email-btn-test');
+    const saveBtn = box.querySelector('#austra-alert-btn-confirm');
+
+    enabledInput.checked = Boolean(STATE.emailEnabled);
+    webhookInput.value = STATE.emailWebhookUrl || '';
+    recipientInput.value = STATE.emailRecipient || '';
+
+    const showStatus = (text, type) => {
+      statusBox.innerText = text;
+      statusBox.className = `austra-email-status-msg ${type}`;
+      statusBox.style.display = 'block';
+    };
+
+    const escListener = (e) => {
+      if (e.key === 'Escape') {
+        closeDialog();
+      }
+    };
+
+    const closeDialog = () => {
+      document.removeEventListener('keydown', escListener);
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+    };
+
+    overlay.querySelector('#austra-alert-close-x').addEventListener('click', closeDialog);
+    overlay.querySelector('#austra-alert-btn-cancel').addEventListener('click', closeDialog);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeDialog();
+    });
+    document.addEventListener('keydown', escListener);
+
+    testBtn.addEventListener('click', async () => {
+      const urlVal = webhookInput.value.trim();
+      const recipientVal = recipientInput.value.trim();
+
+      if (!isValidWebhookUrl(urlVal)) {
+        showStatus('⚠️ Lūdzu, ievadiet derīgu HTTPS Power Automate Webhook URL.', 'error');
+        return;
+      }
+
+      testBtn.disabled = true;
+      testBtn.innerText = 'Sūta testu...';
+      showStatus('Sūta testa pieprasījumu uz Power Automate...', 'info');
+
+      const res = await sendErrorEmail(
+        'Testa ziņojums no Austra ERP paplašinājuma.',
+        true,
+        {
+          emailEnabled: true,
+          emailWebhookUrl: urlVal,
+          emailRecipient: recipientVal
+        }
+      );
+
+      testBtn.disabled = false;
+      testBtn.innerText = '📨 Testēt e-pastu';
+
+      if (res && res.status === 'ok') {
+        showStatus('✅ Testa e-pasts veiksmīgi nosūtīts! Pārbaudiet Outlook iesūtni.', 'success');
+      } else {
+        showStatus(`⚠️ Neizdevās nosūtīt: ${(res && res.message) || 'Nezināma kļūda'}`, 'error');
+      }
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      const enabledVal = enabledInput.checked;
+      const urlVal = webhookInput.value.trim();
+      const recipientVal = recipientInput.value.trim();
+
+      if ((enabledVal || urlVal.length > 0) && !isValidWebhookUrl(urlVal)) {
+        showStatus('⚠️ Lūdzu, ievadiet derīgu HTTPS Webhook URL (jāsākas ar https://).', 'error');
+        return;
+      }
+
+      await saveEmailSettings({
+        emailEnabled: enabledVal,
+        emailWebhookUrl: urlVal,
+        emailRecipient: recipientVal
+      });
+
+      logActivity('⚙️ E-pasta iestatījumi saglabāti.');
+      closeDialog();
+    });
+  }
+
   function updateOrderStatusDisplay() {
     const el = document.getElementById('austra-display-status');
     if (!el) return;
@@ -1128,6 +1465,12 @@
           </label>
           <button class="austra-btn-sound-test" id="austra-btn-test-sound" title="Pārbaudīt melodisko čaimu">🔔 Testēt</button>
         </div>
+        <div class="austra-footer-email-row">
+          <label class="austra-checkbox-label">
+            <input type="checkbox" id="austra-check-email" /> E-pasts
+          </label>
+          <button class="austra-btn-email-settings" id="austra-btn-email-settings" type="button" title="Konfigurēt Power Automate e-pasta paziņojumus">⚙️ E-pasta iestatījumi</button>
+        </div>
         <div class="austra-version-row">
           <span>kasparsciematnieks@amf.lv &copy; 2026 • v${CURRENT_VERSION}</span>
           <button class="austra-btn-check-update" id="austra-btn-check-update" title="Pārbaudīt, vai GitHub ir pieejama jaunāka versija">Pārbaudīt atjauninājumu</button>
@@ -1173,6 +1516,29 @@
     testSoundBtn.addEventListener('click', () => {
       playSound('success');
     });
+
+    const emailCheck = sidebarEl.querySelector('#austra-check-email');
+    if (emailCheck) {
+      emailCheck.checked = Boolean(STATE.emailEnabled);
+      emailCheck.addEventListener('change', async (e) => {
+        if (e.target.checked && !isValidWebhookUrl(STATE.emailWebhookUrl)) {
+          e.target.checked = false;
+          showEmailSettingsDialog();
+          return;
+        }
+        await saveEmailSettings({
+          emailEnabled: e.target.checked,
+          emailWebhookUrl: STATE.emailWebhookUrl,
+          emailRecipient: STATE.emailRecipient
+        });
+        logActivity(STATE.emailEnabled ? '📧 E-pasta paziņojumi ieslēgti' : 'E-pasta paziņojumi izslēgti');
+      });
+    }
+
+    const emailSettingsBtn = sidebarEl.querySelector('#austra-btn-email-settings');
+    if (emailSettingsBtn) {
+      emailSettingsBtn.addEventListener('click', showEmailSettingsDialog);
+    }
 
     // Pēc noklusējuma atveram un pabīdām lapas saturu pa kreisi!
     openSidebar();
@@ -1403,6 +1769,7 @@
       'Austra ERP: Taimauts!',
       'Materiālu rezervācija netika pabeigta 15 minūšu laikā. Lūdzu, pārbaudiet manuāli.'
     );
+    sendErrorEmail('Materiālu rezervācija netika pabeigta 15 minūšu laikā (taimauts).');
   }
 
   function handleError(msg) {
@@ -1413,6 +1780,7 @@
     logActivity(`⚠️ ${msg}`);
     playSound('error');
     sendNotification('Austra ERP Kļūda', msg);
+    sendErrorEmail(msg);
   }
 
   function stopTimer() {
@@ -1519,6 +1887,7 @@
     }
 
     createSidebarUI();
+    loadEmailSettings();
     console.log(`[Austra Addon v${CURRENT_VERSION}] Sānu panelis sekmīgi inicializēts.`);
 
     // 1. Pārbaudām, vai šis pasūtījums tikko tika pabeigts pirms lapas pārlādes!

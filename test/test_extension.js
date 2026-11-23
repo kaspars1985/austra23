@@ -2,9 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-console.log('--- AUSTRA EXTENSION V1.2.11 VERIFICATION ---');
+console.log('--- AUSTRA EXTENSION V1.3.0 VERIFICATION ---');
 
 const extDir = path.join(__dirname, '..', 'extension');
+const rootDir = path.join(__dirname, '..');
 
 // 1. Check manifest
 const manifestPath = path.join(extDir, 'manifest.json');
@@ -14,10 +15,15 @@ if (!fs.existsSync(manifestPath)) {
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 console.log('✓ manifest.json is valid JSON');
 
-if (manifest.version !== '1.2.11') {
-  throw new Error(`manifest.json version should be 1.2.11, got ${manifest.version}`);
+if (manifest.version !== '1.3.0') {
+  throw new Error(`manifest.json version should be 1.3.0, got ${manifest.version}`);
 }
-console.log('✓ manifest.json version is 1.2.11');
+console.log('✓ manifest.json version is 1.3.0');
+
+if (!Array.isArray(manifest.host_permissions) || !manifest.host_permissions.includes('https://*.environment.api.powerplatform.com/*')) {
+  throw new Error('manifest.json host_permissions must include https://*.environment.api.powerplatform.com/*');
+}
+console.log('✓ manifest.json host_permissions includes Power Automate domain');
 
 if (manifest.action.default_popup) {
   throw new Error('default_popup should not be set (we want direct sidebar toggle via chrome.action.onClicked)!');
@@ -38,7 +44,30 @@ const bgPath = path.join(extDir, manifest.background.service_worker);
 if (!fs.existsSync(bgPath)) throw new Error('Service worker missing');
 const bgCode = fs.readFileSync(bgPath, 'utf8');
 new vm.Script(bgCode); // syntax check
-console.log('✓ background.js syntax is valid');
+if (!bgCode.includes('sendErrorEmail')) {
+  throw new Error('background.js is missing sendErrorEmail handler!');
+}
+if (/[?&]sig=[A-Za-z0-9_-]{10,}/i.test(bgCode)) {
+  throw new Error('background.js must not contain hardcoded webhook sig token!');
+}
+console.log('✓ background.js syntax is valid and contains sendErrorEmail handler without hardcoded secrets');
+
+// 3b. Check popup.html and README.md versions
+const popupHtmlPath = path.join(extDir, 'popup.html');
+if (!fs.existsSync(popupHtmlPath)) throw new Error('popup.html missing');
+const popupHtml = fs.readFileSync(popupHtmlPath, 'utf8');
+if (!popupHtml.includes('v1.3.0')) {
+  throw new Error('popup.html is missing v1.3.0!');
+}
+console.log('✓ popup.html version is synchronized to v1.3.0');
+
+const readmePath = path.join(rootDir, 'README.md');
+if (!fs.existsSync(readmePath)) throw new Error('README.md missing');
+const readmeContent = fs.readFileSync(readmePath, 'utf8');
+if (!readmeContent.includes('v1.3.0')) {
+  throw new Error('README.md is missing v1.3.0!');
+}
+console.log('✓ README.md version is synchronized to v1.3.0');
 
 // 4. Check content script & styles
 for (const cs of manifest.content_scripts) {
@@ -47,8 +76,11 @@ for (const cs of manifest.content_scripts) {
     if (!fs.existsSync(jsPath)) throw new Error(`Content script missing: ${jsFile}`);
     const code = fs.readFileSync(jsPath, 'utf8');
     new vm.Script(code); // syntax check
-    if (!code.includes("const CURRENT_VERSION = '1.2.11'")) {
-      throw new Error('content.js is missing CURRENT_VERSION = 1.2.11');
+    if (!code.includes("const CURRENT_VERSION = '1.3.0'")) {
+      throw new Error('content.js is missing CURRENT_VERSION = 1.3.0');
+    }
+    if (/[?&]sig=[A-Za-z0-9_-]{10,}/i.test(code)) {
+      throw new Error('content.js must not contain hardcoded webhook sig token!');
     }
     if (!code.includes('findModalConfirmButton') || !code.includes('waitForAndConfirmModal') || !code.includes('checkModalForErrors')) {
       throw new Error('content.js is missing modal confirmation and error inspection functions!');
@@ -59,7 +91,17 @@ for (const cs of manifest.content_scripts) {
     if (!code.includes('saveLogToSession') || !code.includes('loadLogFromSession') || !code.includes('formatTimestamp') || !code.includes('getInitialLogContent')) {
       throw new Error('content.js is missing activity log persistence or timestamp functions!');
     }
-    console.log(`✓ ${jsFile} syntax is valid, contains modal validation, error inspection, drawing dialog, manufacturing check, log persistence and timestamp handling`);
+    if (
+      !code.includes('sendErrorEmail') ||
+      !code.includes('showEmailSettingsDialog') ||
+      !code.includes('formatIndicatorsSummary') ||
+      !code.includes('loadEmailSettings') ||
+      !code.includes('saveEmailSettings') ||
+      !code.includes('isValidWebhookUrl')
+    ) {
+      throw new Error('content.js is missing Power Automate email notification functions!');
+    }
+    console.log(`✓ ${jsFile} syntax is valid, contains modal validation, error inspection, email notifications, and synchronized v1.3.0`);
   }
   for (const cssFile of cs.css) {
     const cssPath = path.join(extDir, cssFile);
@@ -77,7 +119,10 @@ for (const cs of manifest.content_scripts) {
     if (!cssContent.includes('.austra-log-card') || !cssContent.includes('.austra-log-view')) {
       throw new Error('styles.css is missing log card styling!');
     }
-    console.log(`✓ ${cssFile} verified with layout shifting rules, alert buttons, clear log button, and expanded log card`);
+    if (!cssContent.includes('.austra-btn-email-settings') || !cssContent.includes('.austra-email-input')) {
+      throw new Error('styles.css is missing email settings styling!');
+    }
+    console.log(`✓ ${cssFile} verified with layout shifting rules, alert buttons, clear log button, expanded log card, and email settings styles`);
   }
 }
 
@@ -211,5 +256,49 @@ if (isManufacturingStatus('Jauns')) throw new Error('False positive for Jauns in
 if (isManufacturingStatus('')) throw new Error('False positive for empty string in manufacturing check!');
 if (isManufacturingStatus(null)) throw new Error('False positive for null in manufacturing check!');
 console.log('✓ Manufacturing status logic correctly detects "Uz ražošanu" and rejects others');
+
+// 12. Test Webhook URL validation logic
+function isValidWebhookUrl(url) {
+  const trimmed = String(url || '').trim();
+  if (!trimmed) return false;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'https:';
+  } catch (e) {
+    return false;
+  }
+}
+
+if (!isValidWebhookUrl('https://default.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/123/triggers/manual/paths/invoke?api-version=1&sig=test')) {
+  throw new Error('Failed to accept valid HTTPS Power Automate URL!');
+}
+if (!isValidWebhookUrl('  https://prod-01.westeurope.logic.azure.com:443/workflows/abc/triggers/manual/paths/invoke  ')) {
+  throw new Error('Failed to accept trimmed HTTPS Logic Apps URL!');
+}
+if (isValidWebhookUrl('http://example.com/webhook')) throw new Error('Should reject non-HTTPS URL!');
+if (isValidWebhookUrl('not-a-url')) throw new Error('Should reject malformed URL!');
+if (isValidWebhookUrl('')) throw new Error('Should reject empty URL!');
+if (isValidWebhookUrl(null)) throw new Error('Should reject null URL!');
+console.log('✓ Webhook URL validation correctly accepts HTTPS URLs and rejects invalid/HTTP URLs');
+
+// 13. Test Indicators Summary formatting logic
+function formatIndicatorsSummary(states) {
+  const toEmoji = (dot) => {
+    if (dot && dot.isGreen) return '🟢';
+    if (dot && dot.isRed) return '🔴';
+    return '⚪';
+  };
+  return `CutRite: ${toEmoji(states.cutrite)} | BOM: ${toEmoji(states.bom)} | Montāža: ${toEmoji(states.assembly)}`;
+}
+
+const summary = formatIndicatorsSummary({
+  cutrite: { isGreen: true, isRed: false },
+  bom: { isGreen: false, isRed: false },
+  assembly: { isGreen: false, isRed: true }
+});
+if (summary !== 'CutRite: 🟢 | BOM: ⚪ | Montāža: 🔴') {
+  throw new Error(`Unexpected indicator summary formatting: ${summary}`);
+}
+console.log('✓ Indicator summary formatting produces expected emoji status line');
 
 console.log('\n>>> ALL AUTOMATED TESTS PASSED SUCCESSFULLY! <<<');
